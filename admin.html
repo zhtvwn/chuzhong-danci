@@ -23,8 +23,8 @@
     margin-bottom: 16px; box-shadow: var(--shadow);
   }
   header h1 { font-size: 20px; font-weight: 700; }
-  header .sub { font-size: 12px; opacity: .85; margin-top: 4px; }
-  header .sub a { color: #fff; }
+  header .sub { font-size: 12px; opacity: .85; margin-top: 4px; text-align: right; }
+  header .sub a, .back { color: rgba(255,255,255,.9); font-size: 13px; text-decoration: none; border: 1px solid rgba(255,255,255,.4); border-radius: 20px; padding: 5px 14px; display: inline-block; }
   .card {
     background: var(--card); border-radius: var(--radius);
     box-shadow: var(--shadow); padding: 18px; margin-bottom: 14px;
@@ -82,7 +82,7 @@
   <header>
     <h1>⚙️ 用户管理</h1>
     <div class="sub">
-      <a href="/">← 返回背单词</a> &nbsp;·&nbsp; <a href="/logs.html">📊 访问日志</a>
+      <a class="back" href="/">← 返回背单词</a> &nbsp;·&nbsp; <a class="back" href="/logs.html">📊 访问日志</a>
     </div>
   </header>
 
