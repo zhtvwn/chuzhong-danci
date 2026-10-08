@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>初中考纲词汇 · 背单词 & 自测</title>
+<style>
+  :root {
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --text: #1e293b;
+    --muted: #64748b;
+    --green: #10b981;
+    --red: #ef4444;
+    --amber: #f59e0b;
+    --radius: 16px;
+    --shadow: 0 4px 20px rgba(99, 102, 241, .10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px 16px 90px; }
+  header {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 60%, #a855f7 100%);
+    color: #fff; border-radius: 0 0 24px 24px;
+    padding: 22px 20px 18px; margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  header h1 { font-size: 20px; font-weight: 700; letter-spacing: .5px; }
+  header .sub { font-size: 12px; opacity: .85; margin-top: 4px; }
+  header .stats-chips { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .chip {
+    background: rgba(255,255,255,.18); border-radius: 20px;
+    padding: 5px 12px; font-size: 12px; backdrop-filter: blur(4px);
+  }
+  .chip b { font-size: 13px; }
+
+  nav.tabs {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: #fff; display: flex; justify-content: space-around;
+    box-shadow: 0 -2px 16px rgba(0,0,0,.08);
+    padding: 6px 0 max(6px, env(safe-area-inset-bottom)); z-index: 50;
+    border-radius: 16px 16px 0 0;
+  }
+  nav.tabs button {
+    border: none; background: none; padding: 6px 14px; border-radius: 12px;
+    color: var(--muted); font-size: 12px; cursor: pointer; display: flex;
+    flex-direction: column; align-items: center; gap: 2px; font-family: inherit;
+  }
+  nav.tabs button .ic { font-size: 20px; line-height: 1; }
+  nav.tabs button.active { color: var(--primary); background: #eef2ff; font-weight: 600; }
+
+  .panel { display: none; }
+  .panel.active { display: block; animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; } }
+
+  .card {
+    background: var(--card); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 18px; margin-bottom: 14px;
+  }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .grow { flex: 1; }
+  h2.sect { font-size: 15px; margin: 4px 0 10px; color: var(--text); }
+  label.lbl { font-size: 13px; color: var(--muted); display: block; margin: 10px 0 6px; }
+
+  select, input[type=text] {
+    font-family: inherit; font-size: 14px; padding: 10px 12px;
+    border: 1.5px solid #e2e8f0; border-radius: 10px; background: #fff;
+    color: var(--text); outline: none; width: 100%;
+  }
+  select:focus, input:focus { border-color: var(--primary); }
+
+  .btn {
+    font-family: inherit; border: none; border-radius: 12px; padding: 12px 18px;
+    font-size: 15px; cursor: pointer; transition: transform .1s, box-shadow .2s;
+    font-weight: 600; color: #fff;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); box-shadow: 0 4px 12px rgba(99,102,241,.35); }
+  .btn-green { background: linear-gradient(135deg, #34d399, #10b981); box-shadow: 0 4px 12px rgba(16,185,129,.3); }
+  .btn-red { background: linear-gradient(135deg, #f87171, #ef4444); box-shadow: 0 4px 12px rgba(239,68,68,.3); }
+  .btn-ghost { background: #fff; color: var(--text); border: 1.5px solid #e2e8f0; box-shadow: none; }
+  .btn-amber { background: linear-gradient(135deg, #fbbf24, #f59e0b); box-shadow: 0 4px 12px rgba(245,158,11,.3); }
+  .btn[disabled] { opacity: .45; cursor: not-allowed; }
+  .btn-sm { padding: 7px 12px; font-size: 13px; border-radius: 9px; }
+
+  /* ---------- 学习卡片 ---------- */
+  .flip-card {
+    background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+    min-height: 320px; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; text-align: center; padding: 26px 20px; margin-bottom: 14px;
+    cursor: pointer; position: relative; user-select: none;
+  }
+  .flip-card .tag-new {
+    position: absolute; top: 12px; right: 12px; background: #fef3c7; color: #b45309;
+    font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 600;
+  }
+  .flip-card .word { font-size: 34px; font-weight: 700; letter-spacing: .5px; word-break: break-word; }
+  .flip-card .phon { font-size: 16px; color: var(--muted); margin-top: 6px; font-family: "Segoe UI", "Times New Roman", serif; }
+  .flip-card .hint { font-size: 12px; color: #94a3b8; margin-top: 18px; }
+  .flip-card .meaning { font-size: 18px; color: var(--text); line-height: 1.7; margin-top: 4px; }
+  .flip-card .note { font-size: 13px; color: var(--muted); margin-top: 14px; background: #f8fafc; border-radius: 10px; padding: 10px 12px; line-height: 1.6; }
+  .speak-btn {
+    border: none; background: #eef2ff; color: var(--primary); border-radius: 50%;
+    width: 40px; height: 40px; font-size: 18px; cursor: pointer; margin-bottom: 14px;
+  }
+  .prog { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin: 4px 0 14px; }
+  .prog i { display: block; height: 100%; background: linear-gradient(90deg, var(--primary), #a855f7); border-radius: 4px; transition: width .3s; }
+
+  /* ---------- 测验 ---------- */
+  .q-area .q-meta { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; margin-bottom: 10px; }
+  .q-word { font-size: 30px; font-weight: 700; text-align: center; margin: 10px 0 4px; word-break: break-word; }
+  .q-meaning { font-size: 18px; text-align: center; margin: 14px 0; line-height: 1.6; }
+  .q-phon { text-align: center; color: var(--muted); font-size: 15px; }
+  .opt {
+    display: block; width: 100%; text-align: left; font-family: inherit; font-size: 15px;
+    background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px;
+    padding: 13px 14px; margin-bottom: 9px; cursor: pointer; color: var(--text);
+    transition: border-color .15s, background .15s; line-height: 1.5;
+  }
+  .opt:hover { border-color: var(--primary); }
+  .opt.correct { border-color: var(--green); background: #ecfdf5; }
+  .opt.wrong { border-color: var(--red); background: #fef2f2; }
+  .opt[disabled] { cursor: default; }
+  .spell-row { display: flex; gap: 8px; margin: 16px 0; }
+  .feedback { text-align: center; font-size: 14px; padding: 10px; border-radius: 10px; margin-top: 8px; display: none; }
+  .feedback.ok { display: block; background: #ecfdf5; color: #047857; }
+  .feedback.no { display: block; background: #fef2f2; color: #b91c1c; }
+
+  .score-big { font-size: 44px; font-weight: 800; text-align: center;
+    background: linear-gradient(135deg, var(--primary), #a855f7);
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .score-sub { text-align: center; color: var(--muted); font-size: 13px; margin: 6px 0 14px; }
+  .wrong-item { padding: 10px 4px; border-bottom: 1px solid #f1f5f9; font-size: 14px; line-height: 1.6; }
+  .wrong-item:last-child { border-bottom: none; }
+  .wrong-item b { color: var(--primary-dark); font-size: 15px; }
+
+  /* ---------- 词表 ---------- */
+  .list-item { padding: 12px 4px; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
+  .list-item:hover { background: #f8fafc; }
+  .list-item .top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .list-item .w { font-size: 16px; font-weight: 700; }
+  .list-item .p { font-size: 13px; color: var(--muted); }
+  .list-item .m { font-size: 13px; color: var(--muted); margin-top: 3px; line-height: 1.55; }
+  .badge { font-size: 10px; padding: 2px 8px; border-radius: 12px; font-weight: 600; }
+  .badge.new { background: #fef3c7; color: #b45309; }
+  .badge.known { background: #d1fae5; color: #047857; }
+  .badge.unknown { background: #fee2e2; color: #b91c1c; }
+  .badge.part { background: #e0e7ff; color: #4338ca; white-space: nowrap; }
+  .badge.cat { background: #f1f5f9; color: #475569; max-width: 12em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .occ-line { margin-top: 4px; font-size: 12px; color: #64748b; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .chip-btn { border: 1px solid #e2e8f0; background: #fff; border-radius: 20px; padding: 5px 13px;
+    font-size: 12px; cursor: pointer; color: var(--muted); font-family: inherit; }
+  .chip-btn.on { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .chip-btn:hover { border-color: var(--primary); }
+  .list-empty { text-align: center; color: #94a3b8; padding: 40px 0; font-size: 14px; }
+  #wordList { max-height: 60vh; overflow-y: auto; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .stat-box { background: #fff; border-radius: 14px; padding: 16px; text-align: center; box-shadow: var(--shadow); }
+  .stat-box .num { font-size: 30px; font-weight: 800; }
+  .stat-box .lab { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .stat-box.g .num { color: var(--green); }
+  .stat-box.r .num { color: var(--red); }
+  .stat-box.b .num { color: var(--primary); }
+  .stat-box.y .num { color: var(--amber); }
+
+  .back-btn { margin-bottom: 10px; }
+  .hidden { display: none !important; }
+  .footer-tip { text-align: center; font-size: 11px; color: #94a3b8; margin-top: 10px; }
+
+  /* 平板适配 */
+  @media (min-width: 640px) {
+    .wrap { max-width: 780px; }
+    header h1 { font-size: 22px; }
+    .list-item .top .w { font-size: 17px; }
+  }
+  /* 桌面适配 */
+  @media (min-width: 1024px) {
+    .wrap { max-width: 920px; padding-bottom: 110px; }
+    header h1 { font-size: 24px; }
+    header { padding: 28px 28px 22px; }
+    .list-item .top .w { font-size: 18px; }
+    .list-item .m { font-size: 15px; }
+    nav.tabs { max-width: 920px; left: 50%; right: auto; transform: translateX(-50%); width: 100%; border-radius: 16px 16px 0 0; }
+    nav.tabs button { padding: 8px 22px; font-size: 13px; }
+    nav.tabs button .ic { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>📖 初中考纲词汇</h1>
+    <div class="sub">考纲词汇 5 大部分 · 43 天 · 共 <span id="hTotal">0</span> 词条</div>
+    <div class="stats-chips">
+      <span class="chip">已掌握 <b id="hKnown">0</b></span>
+      <span class="chip">未掌握 <b id="hUnknown">0</b></span>
+      <span class="chip">未学过 <b id="hNew">0</b></span>
+    </div>
+  </header>
+
+  <!-- ============ 背单词 ============ -->
+  <div class="panel active" id="panel-learn">
+    <div class="card">
+      <h2 class="sect">选择范围</h2>
+      <div class="row">
+        <div class="grow">
+          <label class="lbl">词库范围</label>
+          <select id="learnScope">
+            <option value="all">全部词汇</option>
+            <option value="unlearned">未学过的词</option>
+            <option value="unknown">未掌握的词</option>
+          </select>
+        </div>
+        <div class="grow">
+          <label class="lbl">顺序</label>
+          <select id="learnOrder">
+            <option value="seq">按原文档顺序</option>
+            <option value="rand">随机顺序</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="grow">
+          <label class="lbl">PART 部分</label>
+          <select id="learnPart"><option value="0">全部 PART（1-5）</option></select>
+        </div>
+        <div class="grow">
+          <label class="lbl">天</label>
+          <select id="learnDay"><option value="0">全部天</option></select>
+        </div>
+      </div>
+      <div style="margin-top:12px"><button class="btn btn-primary" id="btnStartLearn" style="width:100%">开始背单词</button></div>
+    </div>
+
+    <div class="hidden" id="learnArea">
+      <div class="prog"><i id="learnBar" style="width:0%"></i></div>
+      <div class="flip-card" id="flipCard">
+        <div class="tag-new hidden" id="cardTag">2022 新增</div>
+        <button class="speak-btn" id="cardSpeak" title="朗读">🔊</button>
+        <div class="word" id="cardWord"></div>
+        <div class="phon" id="cardPhon"></div>
+        <div class="meaning hidden" id="cardMeaning"></div>
+        <div class="note hidden" id="cardNote"></div>
+        <div class="hint" id="cardHint">点击卡片查看释义</div>
+      </div>
+      <div class="row">
+        <button class="btn btn-red grow" id="btnDont">😵 不认识</button>
+        <button class="btn btn-green grow" id="btnKnow">😀 认识</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn btn-ghost btn-sm grow" id="btnSkip">跳过 ›</button>
+        <button class="btn btn-amber btn-sm grow" id="btnFuzzy">🤔 太模糊</button>
+        <button class="btn btn-ghost btn-sm grow" id="btnLearnQuit">结束</button>
+      </div>
+      <div class="footer-tip">快捷键：空格 翻面 · 1 不认识 · 2 认识 · 3 跳过</div>
+    </div>
+  </div>
+
+  <!-- ============ 自测 ============ -->
+  <div class="panel" id="panel-test">
+    <!-- 测验设置 -->
+    <div id="testSetup">
+      <div class="card">
+        <h2 class="sect">📝 自测设置</h2>
+        <label class="lbl">词库范围</label>
+        <select id="testScope">
+          <option value="all">全部词汇</option>
+          <option value="unlearned">未学过的词</option>
+          <option value="unknown">未掌握的词</option>
+          <option value="known">已掌握的词（复习）</option>
+        </select>
+        <div class="row" style="margin-top:10px">
+          <div class="grow">
+            <label class="lbl">PART 部分</label>
+            <select id="testPart"><option value="0">全部 PART（1-5）</option></select>
+          </div>
+          <div class="grow">
+            <label class="lbl">天</label>
+            <select id="testDay"><option value="0">全部天</option></select>
+          </div>
+        </div>
+        <label class="lbl">题型</label>
+        <select id="testType">
+          <option value="e2c">英译中（看英文选中文）</option>
+          <option value="c2e">中译英（看中文选英文）</option>
+          <option value="spell">拼写（看中文拼单词）</option>
+          <option value="mix">混合题型</option>
+        </select>
+        <label class="lbl">题数</label>
+        <select id="testCount">
+          <option value="10">10 题</option>
+          <option value="20" selected>20 题</option>
+          <option value="30">30 题</option>
+          <option value="50">50 题</option>
+        </select>
+        <div style="margin-top:14px"><button class="btn btn-primary" id="btnStartTest" style="width:100%">开始测试</button></div>
+      </div>
+    </div>
+
+    <!-- 测验进行中 -->
+    <div class="hidden" id="testArea">
+      <div class="card q-area">
+        <div class="q-meta"><span id="qProg">1 / 20</span><span id="qScore">得分：0</span></div>
+        <div class="prog"><i id="testBar" style="width:0%"></i></div>
+        <div id="qBody"></div>
+        <div id="qAfter"></div>
+      </div>
+      <button class="btn btn-ghost btn-sm back-btn" id="btnTestQuit">退出测试</button>
+    </div>
+
+    <!-- 测验结果 -->
+    <div class="hidden" id="testResult">
+      <div class="card">
+        <div class="score-big" id="scoreBig">0 分</div>
+        <div class="score-sub" id="scoreSub"></div>
+        <div class="row" style="justify-content:center">
+          <button class="btn btn-primary btn-sm" id="btnRetest">再来一轮</button>
+          <button class="btn btn-ghost btn-sm" id="btnBackSetup">调整设置</button>
+        </div>
+      </div>
+      <div class="card" id="wrongCard">
+        <h2 class="sect">❌ 错题回顾（点击可朗读）</h2>
+        <div id="wrongList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 词表 ============ -->
+  <div class="panel" id="panel-list">
+    <div class="card">
+      <div class="chips" id="partChips"></div>
+      <div class="row" style="margin-top:10px">
+        <select id="daySel" style="width:auto">
+          <option value="0">全部天</option>
+        </select>
+        <div class="grow"><input type="text" id="searchBox" placeholder="搜索单词或释义…"></div>
+        <select id="filterStatus" style="width:auto">
+          <option value="all">全部</option>
+          <option value="known">已掌握</option>
+          <option value="unknown">未掌握</option>
+        </select>
+      </div>
+    </div>
+    <div class="card">
+      <div id="wordList"></div>
+      <div class="list-empty hidden" id="listEmpty">没有匹配的词条</div>
+    </div>
+  </div>
+
+  <!-- ============ 统计 ============ -->
+  <div class="panel" id="panel-stats">
+    <div class="stat-grid">
+      <div class="stat-box b"><div class="num" id="sTotal">0</div><div class="lab">总词条数</div></div>
+      <div class="stat-box g"><div class="num" id="sKnown">0</div><div class="lab">已掌握</div></div>
+      <div class="stat-box r"><div class="num" id="sUnknown">0</div><div class="lab">未掌握</div></div>
+      <div class="stat-box y"><div class="num" id="sUnlearned">0</div><div class="lab">未学过</div></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h2 class="sect">词库构成（按原文档 PART · 天）</h2>
+      <div id="partStats" style="font-size:13px;line-height:2"></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h2 class="sect">学习记录</h2>
+      <div id="statsDetail" style="font-size:13px;color:var(--muted);line-height:1.8">暂无学习记录</div>
+      <div class="row" style="margin-top:14px">
+        <button class="btn btn-ghost btn-sm grow" id="btnExport">导出进度(JSON)</button>
+        <button class="btn btn-red btn-sm grow" id="btnReset">清空学习记录</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<nav class="tabs">
+  <button class="active" data-tab="learn"><span class="ic">📖</span>背单词</button>
+  <button data-tab="test"><span class="ic">📝</span>自测</button>
+  <button data-tab="list"><span class="ic">📚</span>词表</button>
+  <button data-tab="stats"><span class="ic">📊</span>统计</button>
+</nav>
+
+<script src="words.js?v=3064"></script>
+<script>
+/* ================= 数据与存储 ================= */
+const STORE_KEY = 'vocab_progress_v1';
+let progress = loadProgress();
+
+function loadProgress() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (e) { return {}; }
+}
+function saveProgress() { localStorage.setItem(STORE_KEY, JSON.stringify(progress)); }
+function getStatus(w) {
+  const p = progress[w];
+  return p ? p.k : null;   // true=known, false=unknown, null=未学
+}
+
+function updateHeader() {
+  let known = 0, unknown = 0;
+  for (const w in progress) {
+    if (progress[w].k === true) known++;
+    else if (progress[w].k === false) unknown++;
+  }
+  const total = WORDS.length;
+  document.getElementById('hTotal').textContent = total;
+  document.getElementById('hKnown').textContent = known;
+  document.getElementById('hUnknown').textContent = unknown;
+  document.getElementById('hNew').textContent = total - known - unknown;
+  document.getElementById('sTotal').textContent = total;
+  document.getElementById('sKnown').textContent = known;
+  document.getElementById('sUnknown').textContent = unknown;
+  document.getElementById('sUnlearned').textContent = total - known - unknown;
+  const d = document.getElementById('statsDetail');
+  const rounds = Object.keys(progress).length;
+  d.textContent = rounds ? `已标记 ${rounds} 个词条。继续加油！` : '暂无学习记录';
+  renderPartStats();
+}
+
+/* ================= PART / 天 ================= */
+const PART_INFO = {
+  1: { name: 'PART 1 课标词汇',        days: '第 1-32 天',  short: '课标词汇' },
+  2: { name: 'PART 2 中考常考短语',    days: '第 33-36 天', short: '常考短语' },
+  3: { name: 'PART 3 不规则动词',      days: '第 37 天',    short: '不规则动词' },
+  4: { name: 'PART 4 完形填空高频短语', days: '第 38-41 天', short: '完形短语' },
+  5: { name: 'PART 5 高频单词分类记',   days: '第 42-43 天', short: '高频分类' },
+};
+function daysOf(part) {
+  const s = new Set(WORDS.filter(x => !part || x.part === part).map(x => x.day));
+  return [...s].sort((a, b) => a - b);
+}
+function renderPartStats() {
+  const counts = {};
+  WORDS.forEach(x => { counts[x.part] = (counts[x.part] || 0) + 1; });
+  document.getElementById('partStats').innerHTML =
+    [1, 2, 3, 4, 5].map(p =>
+      `<div>「${PART_INFO[p].name}」（${PART_INFO[p].days}）：<b>${counts[p] || 0}</b> 词条</div>`).join('') +
+    `<div style="color:var(--muted);margin-top:4px">其中带 2022 课标新增标记的 ${WORDS.filter(x => x.t).length} 个（在词条上以徽标显示）</div>`;
+}
+function fillPartSel(sel) {
+  sel.innerHTML = '<option value="0">全部 PART（1-5）</option>' +
+    [1, 2, 3, 4, 5].map(p => `<option value="${p}">P${p} ${PART_INFO[p].name}</option>`).join('');
+}
+function fillDaySel(partVal, daySel) {
+  daySel.innerHTML = '<option value="0">全部天</option>' +
+    daysOf(partVal).map(d => `<option value="${d}">第 ${d} 天</option>`).join('');
+  daySel.value = '0';
+}
+
+function speak(text) {
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US'; u.rate = 0.9;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
+/* ================= Tab 切换 ================= */
+document.querySelectorAll('nav.tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'list') renderList();
+    if (btn.dataset.tab === 'stats') updateHeader();
+  });
+});
+
+/* ================= 词库筛选 ================= */
+function scopeFilter(scope, part, day) {
+  let pool;
+  switch (scope) {
+    case 'unlearned': pool = WORDS.filter(x => getStatus(x.w) === null); break;
+    case 'unknown':   pool = WORDS.filter(x => getStatus(x.w) === false); break;
+    case 'known':     pool = WORDS.filter(x => getStatus(x.w) === true); break;
+    default:          pool = WORDS.slice();
+  }
+  if (part) pool = pool.filter(x => x.part === part);
+  if (day) pool = pool.filter(x => x.day === day);
+  return pool;
+}
+function shuffle(a) {
+  const r = a.slice();
+  for (let i = r.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [r[i], r[j]] = [r[j], r[i]];
+  }
+  return r;
+}
+
+/* ================= 背单词 ================= */
+let learnQueue = [], learnIdx = 0, learnShown = false, learnTotal = 0;
+
+document.getElementById('btnStartLearn').addEventListener('click', () => {
+  let pool = scopeFilter(document.getElementById('learnScope').value,
+    +document.getElementById('learnPart').value, +document.getElementById('learnDay').value);
+  if (!pool.length) { alert('该范围内没有词条，换一个范围试试。'); return; }
+  learnQueue = document.getElementById('learnOrder').value === 'rand' ? shuffle(pool) : pool;
+  learnIdx = 0; learnTotal = learnQueue.length;
+  document.getElementById('learnArea').classList.remove('hidden');
+  document.getElementById('btnStartLearn').closest('.card').classList.add('hidden');
+  showCard();
+});
+
+function showCard() {
+  const it = learnQueue[learnIdx];
+  learnShown = false;
+  document.getElementById('learnBar').style.width = (learnIdx / learnTotal * 100) + '%';
+  document.getElementById('cardWord').textContent = it.w;
+  document.getElementById('cardPhon').textContent = it.p || '';
+  document.getElementById('cardMeaning').textContent = it.m || '';
+  const noteEl = document.getElementById('cardNote');
+  noteEl.textContent = it.n || ''; noteEl.classList.toggle('hidden', !it.n);
+  document.getElementById('cardTag').classList.toggle('hidden', !it.t);
+  document.getElementById('cardMeaning').classList.add('hidden');
+  document.getElementById('cardNote').classList.add('hidden');
+  document.getElementById('cardHint').classList.remove('hidden');
+}
+
+function flipCard() {
+  learnShown = true;
+  document.getElementById('cardMeaning').classList.remove('hidden');
+  const it = learnQueue[learnIdx];
+  if (it.n) document.getElementById('cardNote').classList.remove('hidden');
+  document.getElementById('cardHint').classList.add('hidden');
+}
+
+function learnNext() {
+  learnIdx++;
+  if (learnIdx >= learnQueue.length) {
+    document.getElementById('learnBar').style.width = '100%';
+    alert('🎉 本轮背单词完成！共 ' + learnTotal + ' 个词。');
+    quitLearn(false);
+  } else showCard();
+}
+function markWord(w, known) {
+  const p = progress[w] || { k: null, c: 0 };
+  p.k = known; p.c = (p.c || 0) + 1; p.t = Date.now();
+  progress[w] = p; saveProgress(); updateHeader();
+}
+function quitLearn(alertMsg = true) {
+  learnQueue = [];
+  document.getElementById('learnArea').classList.add('hidden');
+  document.getElementById('btnStartLearn').closest('.card').classList.remove('hidden');
+}
+document.getElementById('flipCard').addEventListener('click', () => { flipCard(); });
+document.getElementById('cardSpeak').addEventListener('click', e => {
+  e.stopPropagation();
+  speak(document.getElementById('cardWord').textContent);
+});
+document.getElementById('btnKnow').addEventListener('click', () => {
+  if (!learnQueue.length) return;
+  markWord(learnQueue[learnIdx].w, true); speak(learnQueue[learnIdx].w.split('/')[0]); learnNext();
+});
+document.getElementById('btnDont').addEventListener('click', () => {
+  if (!learnQueue.length) return;
+  markWord(learnQueue[learnIdx].w, false); learnNext();
+});
+document.getElementById('btnFuzzy').addEventListener('click', () => {
+  if (!learnQueue.length) return;
+  markWord(learnQueue[learnIdx].w, false);
+  // 模糊词重新排队到本轮末尾
+  learnQueue.push(learnQueue[learnIdx]); learnTotal++; learnNext();
+});
+document.getElementById('btnSkip').addEventListener('click', () => { if (learnQueue.length) learnNext(); });
+document.getElementById('btnLearnQuit').addEventListener('click', () => quitLearn());
+
+document.addEventListener('keydown', e => {
+  if (!learnQueue.length || !document.getElementById('panel-learn').classList.contains('active')) return;
+  if (e.code === 'Space') { e.preventDefault(); flipCard(); }
+  else if (e.key === '1') document.getElementById('btnDont').click();
+  else if (e.key === '2') document.getElementById('btnKnow').click();
+  else if (e.key === '3') document.getElementById('btnSkip').click();
+});
+
+/* ================= 自测 ================= */
+let quiz = [], qi = 0, score = 0, wrongWords = [];
+
+document.getElementById('btnStartTest').addEventListener('click', () => {
+  const pool = scopeFilter(document.getElementById('testScope').value,
+    +document.getElementById('testPart').value, +document.getElementById('testDay').value);
+  if (!pool.length) { alert('该范围内没有词条，换一个范围试试。'); return; }
+  const count = Math.min(parseInt(document.getElementById('testCount').value), pool.length);
+  const type = document.getElementById('testType').value;
+  const picked = shuffle(pool).slice(0, count);
+  quiz = picked.map(item => {
+    let t = type === 'mix' ? ['e2c', 'c2e', 'spell'][Math.floor(Math.random() * 3)] : type;
+    return { item, type: t };
+  });
+  qi = 0; score = 0; wrongWords = [];
+  showView('testArea');
+  renderQuestion();
+});
+
+function showView(v) {
+  ['testSetup', 'testArea', 'testResult'].forEach(id =>
+    document.getElementById(id).classList.toggle('hidden', id !== v));
+}
+
+function shortMeaning(m) { return m.replace(/\s+/g, ' ').trim(); }
+
+function norm(s) { return (s || '').toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]/g, ''); }
+
+function renderQuestion() {
+  const q = quiz[qi];
+  document.getElementById('qProg').textContent = `${qi + 1} / ${quiz.length}`;
+  document.getElementById('qScore').textContent = `得分：${score}`;
+  document.getElementById('testBar').style.width = (qi / quiz.length * 100) + '%';
+  const body = document.getElementById('qBody');
+  const after = document.getElementById('qAfter');
+  after.innerHTML = ''; body.innerHTML = '';
+
+  if (q.type === 'e2c') {
+    // 英译中：4 个中文释义选项
+    const opts = shuffle([q.item, ...pickDistractors(q.item, x => x.m, 3)]);
+    body.innerHTML = `
+      <div class="q-word">${esc(q.item.w)} ${q.item.p ? `<span class="q-phon" style="font-size:15px">${esc(q.item.p)}</span>` : ''}</div>
+      <button class="speak-btn" style="display:block;margin:10px auto" onclick="speak('${escAttr(q.item.w)}')">🔊</button>
+      <div class="q-meaning" style="color:#94a3b8;font-size:13px">这个单词是什么意思？</div>`;
+    opts.forEach((o, i) => {
+      const b = document.createElement('button');
+      b.className = 'opt'; b.textContent = shortMeaning(o.m);
+      b.onclick = () => answer(b, o === q.item, o, q);
+      body.appendChild(b);
+    });
+  } else if (q.type === 'c2e') {
+    // 中译英：4 个英文单词选项
+    const opts = shuffle([q.item, ...pickDistractors(q.item, x => x.w, 3)]);
+    body.innerHTML = `<div class="q-meaning">${esc(shortMeaning(q.item.m))}</div>
+      <div style="text-align:center;color:#94a3b8;font-size:13px;margin-bottom:10px">下面哪个单词对应这个意思？</div>`;
+    opts.forEach(o => {
+      const b = document.createElement('button');
+      b.className = 'opt'; b.textContent = o.w;
+      b.onclick = () => answer(b, o === q.item, o, q);
+      body.appendChild(b);
+    });
+  } else {
+    // 拼写
+    body.innerHTML = `
+      <div class="q-meaning">${esc(shortMeaning(q.item.m))}</div>
+      ${q.item.p ? `<div class="q-phon">/ ${esc(q.item.p.replace(/^\//, '').replace(/\/$/, ''))} /</div>` : ''}
+      <div class="spell-row">
+        <input type="text" id="spellInput" placeholder="输入英文单词…" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <button class="btn btn-primary" id="spellSubmit">确定</button>
+      </div>`;
+    const inp = document.getElementById('spellInput');
+    inp.focus();
+    const submit = () => {
+      const val = inp.value;
+      const answers = spellAnswers(q.item.w);
+      const ok = answers.includes(norm(val)) || answers.some(a => a.length > 3 && norm(val) === a);
+      document.getElementById('spellSubmit').disabled = true;
+      inp.disabled = true;
+      answer(null, ok, null, q, val);
+    };
+    document.getElementById('spellSubmit').onclick = submit;
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+  }
+}
+
+// 拼写可接受答案：去掉括注，按 / 分解
+function spellAnswers(w) {
+  let base = w.replace(/\(.*?\)/g, '');
+  const parts = base.split('/').map(s => s.replace(/\./g, '').trim()).filter(Boolean);
+  const answers = new Set();
+  [base, ...parts].forEach(s => answers.add(norm(s)));
+  return answers;
+}
+
+function pickDistractors(target, keyFn, n) {
+  const pool = WORDS.filter(x => x !== target && keyFn(x) && keyFn(x) !== keyFn(target));
+  return shuffle(pool).slice(0, n);
+}
+
+function answer(btn, ok, chosen, q, typed) {
+  document.querySelectorAll('#qBody .opt').forEach(b => { b.disabled = true; });
+  const after = document.getElementById('qAfter');
+  const correctBtns = document.querySelectorAll('#qBody .opt');
+  if (q.type !== 'spell') {
+    correctBtns.forEach(b => {
+      if (b.textContent === (q.type === 'e2c' ? shortMeaning(q.item.m) : q.item.w) ) b.classList.add('correct');
+      else if (b === btn && !ok) b.classList.add('wrong');
+    });
+  }
+  if (ok) {
+    score++;
+    after.innerHTML = `<div class="feedback ok">✅ 回答正确！</div>`;
+  } else {
+    wrongWords.push(q.item);
+    let html = `<div class="feedback no">❌ 正确答案：<b>${esc(q.item.w)}</b>`;
+    if (q.type !== 'c2e') html += `　${esc(shortMeaning(q.item.m))}`;
+    if (typed) html += `（你写的：${esc(typed)}）`;
+    html += `</div>`;
+    after.innerHTML = html;
+  }
+  speak(q.item.w.split('/')[0]);
+  setTimeout(() => {
+    qi++;
+    if (qi >= quiz.length) finishTest();
+    else renderQuestion();
+  }, ok ? 650 : 1600);
+}
+
+function finishTest() {
+  // 错题自动标记为未掌握
+  wrongWords.forEach(x => markWord(x.w, false));
+  document.getElementById('scoreBig').textContent = Math.round(score / quiz.length * 100) + ' 分';
+  document.getElementById('scoreSub').textContent = `共 ${quiz.length} 题，答对 ${score} 题，答错 ${wrongWords.length} 题（已自动记入未掌握）`;
+  const wl = document.getElementById('wrongList');
+  document.getElementById('wrongCard').classList.toggle('hidden', !wrongWords.length);
+  wl.innerHTML = '';
+  wrongWords.forEach(x => {
+    const d = document.createElement('div');
+    d.className = 'wrong-item';
+    d.innerHTML = `<b>${esc(x.w)}</b> ${esc(x.p || '')}<br>${esc(shortMeaning(x.m))}${x.n ? `<br><span style="color:#94a3b8">${esc(x.n)}</span>` : ''}`;
+    d.onclick = () => speak(x.w.split('/')[0]);
+    wl.appendChild(d);
+  });
+  showView('testResult');
+  updateHeader();
+}
+
+document.getElementById('btnRetest').addEventListener('click', () => showView('testSetup'));
+document.getElementById('btnBackSetup').addEventListener('click', () => showView('testSetup'));
+document.getElementById('btnTestQuit').addEventListener('click', () => showView('testSetup'));
+
+/* ================= 词表 ================= */
+function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function escAttr(s) { return esc(s).replace(/'/g, '&#39;'); }
+
+let renderTimer = null;
+const listState = { part: 0, day: 0 };
+
+function renderPartChips() {
+  const host = document.getElementById('partChips');
+  host.innerHTML = '';
+  const mk = (label, val) => {
+    const b = document.createElement('button');
+    b.className = 'chip-btn' + (listState.part === val ? ' on' : '');
+    b.textContent = label;
+    b.onclick = () => {
+      listState.part = val; listState.day = 0;
+      renderPartChips(); fillDaySel(val, document.getElementById('daySel')); renderList();
+    };
+    host.appendChild(b);
+  };
+  mk('全部', 0);
+  for (let p = 1; p <= 5; p++) mk(`P${p} ${PART_INFO[p].short}`, p);
+}
+
+function renderList() {
+  const kwRaw = document.getElementById('searchBox').value.trim();
+  const kw = norm(kwRaw);
+  const filter = document.getElementById('filterStatus').value;
+  const list = document.getElementById('wordList');
+  const empty = document.getElementById('listEmpty');
+  const searching = !!kw;
+  // 纯英文单词 -> 整词边界匹配（搜 do 不再命中 doctor/door）；
+  // 词身无命中时回退到释义/例句，保证 sth / v.-ing 等仍可搜
+  const isWord = /^[a-z]+$/i.test(kwRaw);
+  const escRe = k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const bwRe = (kw && isWord) ? new RegExp(`(^|[^a-z])${escRe(kwRaw.toLowerCase())}(?![a-z])`, 'i') : null;
+  const bwHit = bwRe && WORDS.some(x => bwRe.test(x.w));
+  const matchKw = x => {
+    if (!kw) return true;
+    if (bwHit) return bwRe.test(x.w);
+    return norm(x.w).includes(kw) || x.m.includes(kwRaw) || (x.n || '').includes(kwRaw);
+  };
+  const items = WORDS.filter(x => {
+    // 搜索时忽略 PART/天筛选，保证词在源文档所有部分的出现都能看到
+    if (!searching) {
+      if (listState.part && x.part !== listState.part) return false;
+      if (listState.day && x.day !== listState.day) return false;
+    }
+    if (filter === 'known' && getStatus(x.w) !== true) return false;
+    if (filter === 'unknown' && getStatus(x.w) !== false) return false;
+    if (!matchKw(x)) return false;
+    return true;
+  });
+  // 聚合：同一单词的全部出现位置合为一张卡，逐处做标记
+  const groups = new Map();
+  items.forEach(x => {
+    const k = norm(x.w);
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(x);
+  });
+  const gArr = [...groups.values()];
+  empty.classList.toggle('hidden', gArr.length > 0);
+  const frag = document.createDocumentFragment();
+  const show = gArr.length > 400 ? gArr.slice(0, 400) : gArr; // 性能保护
+  show.forEach(occ => {
+    const x = occ[0];
+    const st = getStatus(x.w);
+    const p = (occ.find(o => o.p) || {}).p || '';
+    const anyNew = occ.some(o => o.t);
+    const badges = occ.map(o =>
+      `<span class="badge part">P${o.part} · 第${o.day}天${o.cat ? ` · ${esc(o.cat)}` : ''}</span>`).join(' ');
+    // 出现位置不同释义的，逐处补充显示
+    const seen = new Set([(x.m || '') + '||' + (x.n || '')]);
+    let extra = '';
+    occ.slice(1).forEach(o => {
+      const key = (o.m || '') + '||' + (o.n || '');
+      if (seen.has(key)) return;
+      seen.add(key);
+      extra += `<div class="occ-line"><span class="badge part">P${o.part} · 第${o.day}天${o.cat ? ` · ${esc(o.cat)}` : ''}</span> ${esc(shortMeaning(o.m))}${o.n ? '　·　' + esc(o.n) : ''}</div>`;
+    });
+    const d = document.createElement('div');
+    d.className = 'list-item';
+    d.innerHTML = `
+      <div class="top">
+        <span class="w">${esc(x.w)}</span>
+        ${p ? `<span class="p">${esc(p)}</span>` : ''}
+        ${badges}
+        ${anyNew ? `<span class="badge new">2022新增</span>` : ''}
+        ${st === true ? `<span class="badge known">已掌握</span>` : ''}
+        ${st === false ? `<span class="badge unknown">未掌握</span>` : ''}
+      </div>
+      <div class="m">${esc(shortMeaning(x.m))}${x.n ? '　·　' + esc(x.n) : ''}</div>
+      ${extra}`;
+    d.onclick = () => speak(x.w.split('/')[0]);
+    frag.appendChild(d);
+  });
+  list.innerHTML = '';
+  list.appendChild(frag);
+  if (gArr.length > 400) {
+    const tip = document.createElement('div');
+    tip.className = 'list-empty';
+    tip.textContent = `结果较多（${gArr.length} 个单词 / ${items.length} 处出现），仅显示前 400 个单词，请用搜索缩小范围`;
+    list.appendChild(tip);
+  }
+}
+document.getElementById('searchBox').addEventListener('input', () => {
+  clearTimeout(renderTimer);
+  renderTimer = setTimeout(renderList, 200);
+});
+document.getElementById('filterStatus').addEventListener('change', renderList);
+document.getElementById('daySel').addEventListener('change', e => { listState.day = +e.target.value; renderList(); });
+
+/* ================= 初始化 ================= */
+fillPartSel(document.getElementById('learnPart'));
+fillPartSel(document.getElementById('testPart'));
+fillDaySel(0, document.getElementById('learnDay'));
+fillDaySel(0, document.getElementById('testDay'));
+fillDaySel(0, document.getElementById('daySel'));
+renderPartChips();
+document.getElementById('learnPart').addEventListener('change', e => fillDaySel(+e.target.value, document.getElementById('learnDay')));
+document.getElementById('testPart').addEventListener('change', e => fillDaySel(+e.target.value, document.getElementById('testDay')));
+
+/* ================= 统计 ================= */
+document.getElementById('btnExport').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(progress, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'vocab_progress.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+document.getElementById('btnReset').addEventListener('click', () => {
+  if (confirm('确定清空所有学习记录吗？此操作不可恢复。')) {
+    progress = {}; saveProgress(); updateHeader(); renderList();
+  }
+});
+
+/* ================= 访问日志打点（每会话一次） ================= */
+try {
+  if (!sessionStorage.getItem('vlog')) {
+    sessionStorage.setItem('vlog', '1');
+    fetch('/api/visit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ua: navigator.userAgent,
+        lang: navigator.language,
+        screen: screen.width + 'x' + screen.height,
+        ref: document.referrer,
+        page: 'index',
+      }),
+    }).catch(() => {});
+  }
+} catch (e) { /* 隐私模式等场景静默失败 */ }
+
+updateHeader();
+</script>
+</body>
+</html>

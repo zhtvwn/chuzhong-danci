@@ -1,0 +1,20 @@
+# 飞牛 NAS (fnOS) Docker Compose 部署
+# 1. 将整个「初中单词」目录中的以下文件上传到 NAS，如 /vol1/1000/vocab/
+#    index.html  words.js  logs.html  server.js  Dockerfile  docker-compose.yml
+# 2. 在 fnOS「Docker」应用 →「Compose」中新建项目，选择该目录，或 SSH 执行:
+#    cd /vol1/1000/vocab && docker compose up -d --build
+# 3. 访问 http://NAS的IP:8800  学习页面；日志页 http://NAS的IP:8800/logs.html
+services:
+  vocab:
+    build: .
+    image: vocab-app:latest
+    container_name: vocab-app
+    ports:
+      - "8800:8800"          # 左侧端口可自行修改，如 "8080:8800"
+    volumes:
+      - ./data:/app/data     # 访问日志持久化（NAS 目录）
+    environment:
+      - TZ=Asia/Shanghai
+      # 建议设置日志访问令牌，防止局域网外泄露（设为空则不启用保护）
+      - ADMIN_TOKEN=
+    restart: unless-stopped

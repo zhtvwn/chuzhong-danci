@@ -1,0 +1,10 @@
+data
+imgs
+node_modules
+*.py
+*.json
+*.bak
+*.txt
+*.ps1
+*.md
+.codebuddy

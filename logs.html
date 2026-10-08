@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>访问日志 · 初中考纲词汇</title>
+<style>
+  :root {
+    --primary: #6366f1; --bg: #f1f5f9; --card: #fff; --text: #1e293b;
+    --muted: #64748b; --green: #10b981; --amber: #f59e0b;
+    --radius: 16px; --shadow: 0 4px 20px rgba(99,102,241,.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { font-family: "PingFang SC","Microsoft YaHei","Segoe UI",sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px 16px 60px; }
+  header { background: linear-gradient(135deg,#6366f1 0%,#8b5cf6 60%,#a855f7 100%); color:#fff; border-radius:0 0 24px 24px; padding:22px 20px 18px; margin-bottom:16px; box-shadow: var(--shadow); }
+  header h1 { font-size: 20px; }
+  header .sub { font-size: 12px; opacity:.85; margin-top:4px; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:12px; }
+  .stat-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-bottom:14px; }
+  .stat { background:var(--card); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow); }
+  .stat .num { font-size:24px; font-weight:700; color:var(--primary); }
+  .stat .lbl { font-size:12px; color:var(--muted); margin-top:2px; }
+  .card { background:var(--card); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); margin-bottom:14px; }
+  .card h2 { font-size:14px; color:var(--muted); font-weight:600; margin-bottom:10px; }
+  .bars { display:flex; align-items:flex-end; gap:4px; height:80px; }
+  .bars .bar { flex:1; background:linear-gradient(180deg,#818cf8,#6366f1); border-radius:4px 4px 0 0; min-height:3px; position:relative; }
+  .bars .bar span { position:absolute; bottom:-16px; left:50%; transform:translateX(-50%); font-size:9px; color:var(--muted); white-space:nowrap; }
+  .bars-wrap { padding-bottom:18px; overflow-x:auto; }
+  .dev-row { display:flex; align-items:center; gap:8px; margin:7px 0; font-size:13px; }
+  .dev-row .track { flex:1; height:8px; border-radius:4px; background:#eef2ff; overflow:hidden; }
+  .dev-row .fill { height:100%; border-radius:4px; background:var(--primary); }
+  .dev-row b { min-width:44px; text-align:right; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th { text-align:left; color:var(--muted); font-weight:600; padding:8px 6px; border-bottom:2px solid #eef2ff; white-space:nowrap; }
+  td { padding:8px 6px; border-bottom:1px solid #f1f5f9; vertical-align:top; }
+  tr.log-item td { cursor:pointer; }
+  tr.open td.detail { display:block; }
+  td.detail { display:none; word-break:break-all; color:var(--muted); background:#f8fafc; border-radius:8px; padding:8px; }
+  .tag { display:inline-block; border-radius:10px; padding:1px 8px; font-size:11px; }
+  .tag.pc { background:#eef2ff; color:#4f46e5; }
+  .tag.手机 { background:#ecfdf5; color:#059669; }
+  .tag.平板 { background:#fffbeb; color:#d97706; }
+  .btn { border:none; background:var(--primary); color:#fff; border-radius:20px; padding:8px 18px; font-size:13px; cursor:pointer; font-family:inherit; }
+  .btn:active { opacity:.8; }
+  .btn.ghost { background:#eef2ff; color:var(--primary); }
+  .back { color:rgba(255,255,255,.9); font-size:13px; text-decoration:none; border:1px solid rgba(255,255,255,.4); border-radius:20px; padding:5px 14px; }
+  .empty { text-align:center; color:var(--muted); padding:30px 0; font-size:13px; }
+  #tokenBar { display:none; background:#fffbeb; border:1px solid #fde68a; color:#92400e; border-radius:12px; padding:10px 14px; font-size:13px; margin-bottom:14px; }
+  #tokenBar input { border:1px solid #fde68a; border-radius:8px; padding:6px 10px; margin:0 8px; font-size:13px; width:160px; }
+  /* 平板 */
+  @media (min-width: 640px) {
+    .wrap { max-width: 900px; }
+    .stat-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+  /* 桌面 */
+  @media (min-width: 1024px) {
+    .wrap { max-width: 1100px; padding-bottom:40px; }
+    header h1 { font-size:24px; }
+    table { font-size:13px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>📊 访问日志</h1>
+    <div class="sub">登录 IP · 登录时间 · 设备统计 &nbsp;|&nbsp; <a class="back" href="/">← 返回背单词</a></div>
+    <div class="row">
+      <button class="btn ghost" style="background:rgba(255,255,255,.2);color:#fff" onclick="load()">↻ 刷新</button>
+      <span class="sub" id="lastUpdate"></span>
+    </div>
+  </header>
+
+  <div id="tokenBar">
+    此日志已启用访问保护，请输入令牌：
+    <input id="tokenInput" placeholder="ADMIN_TOKEN">
+    <button class="btn" onclick="saveToken()">查看</button>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat"><div class="num" id="sTodayPv">–</div><div class="lbl">今日访问（人次）</div></div>
+    <div class="stat"><div class="num" id="sTodayUv">–</div><div class="lbl">今日独立 IP</div></div>
+    <div class="stat"><div class="num" id="sTotal">–</div><div class="lbl">累计访问</div></div>
+    <div class="stat"><div class="num" id="sIps">–</div><div class="lbl">累计独立 IP</div></div>
+  </div>
+
+  <div class="card">
+    <h2>近 14 天访问趋势</h2>
+    <div class="bars-wrap"><div class="bars" id="trend"></div></div>
+  </div>
+
+  <div class="card">
+    <h2>设备分布</h2>
+    <div id="devices"></div>
+  </div>
+
+  <div class="card">
+    <h2>访问来源 TOP&nbsp;<span id="ipCount"></span></h2>
+    <div id="topIps" style="font-size:13px"></div>
+  </div>
+
+  <div class="card">
+    <h2>最近访问明细（点击行展开 UA）</h2>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>时间</th><th>IP 地址</th><th>设备</th><th>屏幕 / 语言</th><th>来源页</th></tr></thead>
+        <tbody id="logs"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="logEmpty" style="display:none">暂无访问记录</div>
+  </div>
+</div>
+
+<script>
+let timer = null;
+
+function token() { return localStorage.getItem('vlogToken') || ''; }
+function saveToken() {
+  localStorage.setItem('vlogToken', document.getElementById('tokenInput').value.trim());
+  load();
+}
+
+function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function load() {
+  try {
+    const r = await fetch('/api/logs' + (token() ? '?token=' + encodeURIComponent(token()) : ''));
+    if (r.status === 401) { document.getElementById('tokenBar').style.display = 'block'; return; }
+    const d = await r.json();
+    document.getElementById('tokenBar').style.display = 'none';
+    document.getElementById('sTodayPv').textContent = d.todayPv;
+    document.getElementById('sTodayUv').textContent = d.todayUv;
+    document.getElementById('sTotal').textContent = d.total;
+    document.getElementById('sIps').textContent = d.uniqueIps;
+    document.getElementById('lastUpdate').textContent = '更新于 ' + new Date(d.now).toLocaleTimeString();
+    renderTrend(d.daily);
+    renderDevices(d.devices);
+    renderIps(d.topIps);
+    renderLogs(d.recent);
+  } catch (e) {
+    document.getElementById('lastUpdate').textContent = '加载失败: ' + e.message;
+  }
+}
+
+function renderTrend(daily) {
+  const days = Object.keys(daily).sort().slice(-14);
+  const max = Math.max(1, ...days.map(d => daily[d]));
+  const host = document.getElementById('trend');
+  host.innerHTML = days.map(d => {
+    const h = Math.round(daily[d] / max * 72);
+    const short = d.slice(5);
+    return `<div class="bar" style="height:${h}px" title="${d} · ${daily[d]} 次"><span>${short}</span></div>`;
+  }).join('');
+}
+
+function renderDevices(devices) {
+  const total = Object.values(devices).reduce((a, b) => a + b, 0) || 1;
+  document.getElementById('devices').innerHTML = Object.entries(devices)
+    .sort((a, b) => b[1] - a[1])
+    .map(([k, n]) => `<div class="dev-row">${k}<div class="track"><div class="fill" style="width:${Math.round(n / total * 100)}%"></div></div><b>${n}</b></div>`)
+    .join('') || '<div class="empty">暂无数据</div>';
+}
+
+function renderIps(ips) {
+  document.getElementById('ipCount').textContent = ips.length;
+  document.getElementById('topIps').innerHTML = ips.map(([ip, n]) =>
+    `<div class="dev-row">${esc(ip)}<div class="track"><div class="fill" style="width:${Math.round(n / ips[0][1] * 100)}%"></div></div><b>${n}</b></div>`
+  ).join('') || '<div class="empty">暂无数据</div>';
+}
+
+function renderLogs(list) {
+  const tb = document.getElementById('logs');
+  document.getElementById('logEmpty').style.display = list.length ? 'none' : 'block';
+  tb.innerHTML = list.map((v, i) => `
+    <tr class="log-item" onclick="this.classList.toggle('open')">
+      <td style="white-space:nowrap">${esc(v.time)}</td>
+      <td>${esc(v.ip)}</td>
+      <td><span class="tag ${esc(v.device)}">${esc(v.device)}</span></td>
+      <td>${esc(v.screen || '–')}<br><span style="color:#94a3b8">${esc(v.lang || '')}</span></td>
+      <td>${esc(v.ref || '直接访问')}</td>
+      <td class="detail">UA: ${esc(v.ua || '–')}</td>
+    </tr>`).join('');
+}
+
+load();
+timer = setInterval(load, 30000);   // 30 秒自动刷新
+</script>
+</body>
+</html>
