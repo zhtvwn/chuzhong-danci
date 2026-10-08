@@ -486,6 +486,10 @@ function speak(text) {
     speechSynthesis.speak(u);
   } catch (e) {}
 }
+/* 朗读用词身: 去掉全角/半角括注, 多词形式取第一段 */
+function spokenWord(w) {
+  return (w || '').replace(/[（(][^（）()]*[）)]/g, '').split('/')[0].trim();
+}
 
 /* ================= Tab 切换 ================= */
 document.querySelectorAll('nav.tabs button').forEach(btn => {
@@ -583,7 +587,7 @@ document.getElementById('cardSpeak').addEventListener('click', e => {
 });
 document.getElementById('btnKnow').addEventListener('click', () => {
   if (!learnQueue.length) return;
-  markWord(learnQueue[learnIdx].w, true); speak(learnQueue[learnIdx].w.split('/')[0]); learnNext();
+  markWord(learnQueue[learnIdx].w, true); speak(spokenWord(learnQueue[learnIdx].w)); learnNext();
 });
 document.getElementById('btnDont').addEventListener('click', () => {
   if (!learnQueue.length) return;
@@ -716,9 +720,9 @@ function renderQuestion() {
   }
 }
 
-// 拼写可接受答案：去掉括注，按 / 分解
+// 拼写可接受答案：去掉括注（全角/半角），按 / 分解
 function spellAnswers(w) {
-  let base = w.replace(/\(.*?\)/g, '');
+  let base = w.replace(/[（(][^（）()]*[）)]/g, '');
   const parts = base.split('/').map(s => s.replace(/\./g, '').trim()).filter(Boolean);
   const answers = new Set();
   [base, ...parts].forEach(s => answers.add(norm(s)));
@@ -758,7 +762,7 @@ function answer(btn, ok, chosen, q, typed) {
     html += `</div>`;
     after.innerHTML = html;
   }
-  speak(q.item.w.split('/')[0]);
+  speak(spokenWord(q.item.w));
   setTimeout(() => {
     qi++;
     if (qi >= quiz.length) finishTest();
@@ -778,7 +782,7 @@ function finishTest() {
     const d = document.createElement('div');
     d.className = 'wrong-item';
     d.innerHTML = `<b>${esc(x.w)}</b> ${esc(x.p || '')}<br>${esc(shortMeaning(x.m))}${x.n ? `<br><span style="color:#94a3b8">${esc(x.n)}</span>` : ''}`;
-    d.onclick = () => speak(x.w.split('/')[0]);
+    d.onclick = () => speak(spokenWord(x.w));
     wl.appendChild(d);
   });
   showView('testResult');
@@ -884,7 +888,7 @@ function renderList() {
       </div>
       <div class="m">${esc(shortMeaning(x.m))}${x.n ? '　·　' + esc(x.n) : ''}</div>
       ${extra}`;
-    d.onclick = () => speak(x.w.split('/')[0]);
+    d.onclick = () => speak(spokenWord(x.w));
     frag.appendChild(d);
   });
   list.innerHTML = '';

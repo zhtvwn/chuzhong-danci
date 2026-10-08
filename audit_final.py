@@ -81,9 +81,12 @@ def word_from_line(ln):
         return None                    # 必须字母/括号开头(滤掉音标碎片如 ":z/")
     if re.match(r'^P\d+(-\s*\d+)?(\s+\d+)?$', ln):
         return None                     # 跨页标记 P30-33 / P58 61
-    # 先全量剥离成对斜杠音标组(组内可含空格/括号/OCR噪声): aware /ə'weə（r）/, /ə'wer/
-    # ("a / an" 单斜杠无配对不会误切; "host / hostess" 无闭斜杠不动)
-    ln2 = re.sub(r"\s*/[^/]+?/", '', ln).strip(' ,;')
+    # 全量剥离斜杠音标组(枚举斜杠如 go fishing/shopping/skating、by air/bus/train/ship 不受影响):
+    # a. 前置空白的紧凑组: bed /bed/ -> bed
+    ln2 = re.sub(r"\s+/[^ /]+?/", '', ln).strip(' ,;')
+    # b. 组内含非 ASCII(音标/OCR噪声)或以重音符开头的组, 允许紧贴与含空格:
+    #    instrument/'ɪnstrəmənt/ / aware /ə'weə（r）/, /ə'wer/ / student /'stju:dnt/, /'stu :dnt/
+    ln2 = re.sub(r"\s*/(?=[^/]*(?:[^\x00-\x7f]|'))[^/]+?/", '', ln2).strip(' ,;')
     if ln2 != ln and ln2 and re.search(r'[A-Za-z]', ln2):
         ln = ln2
     else:
