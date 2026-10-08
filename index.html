@@ -175,6 +175,8 @@
   .badge.part { background: rgba(0,122,255,.12); color: #0062CC; white-space: nowrap; }
   .badge.cat { background: #E9E9EB; color: #3C3C43; max-width: 12em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .occ-line { margin-top: 4px; font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .list-item .speak-ic { margin-left: auto; font-size: 15px; color: var(--muted); opacity: .55; flex-shrink: 0; }
+  .list-item:hover .speak-ic { opacity: 1; color: var(--primary); }
   .chip-btn { border: 1px solid #D1D1D6; background: #fff; border-radius: 20px; padding: 5px 13px;
     font-size: 12px; cursor: pointer; color: #3C3C43; font-family: inherit; }
   .chip-btn.on { background: rgba(0,122,255,.12); color: var(--primary); border-color: rgba(0,122,255,.35); font-weight: 600; }
@@ -885,6 +887,7 @@ function renderList() {
         ${st === true ? `<span class="badge known">已掌握</span>` : ''}
         ${st === false ? `<span class="badge unknown">未掌握</span>` : ''}
         ${(currentUser && testPass[norm(x.w)]) ? `<span class="badge tpass" title="自测通过次数">自测×${testPass[norm(x.w)]}</span>` : ''}
+        <span class="speak-ic" title="点击朗读">🔊</span>
       </div>
       <div class="m">${esc(shortMeaning(x.m))}${x.n ? '　·　' + esc(x.n) : ''}</div>
       ${extra}`;
