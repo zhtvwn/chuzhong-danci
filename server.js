@@ -203,6 +203,7 @@ function handleWhoami(req, res) {
     user: s ? s.user : '',
     role: s ? s.role : '',
     anonymous: settings.anonymous !== false,
+    links: Array.isArray(settings.links) ? settings.links : [],   // 统计栏自定义标签
   });
 }
 
@@ -309,16 +310,31 @@ function handleMyPass(req, res) {  const s = getSession(req);
   });
 }
 
-/* --- 匿名访问开关(仅管理员) --- */
+/* --- 匿名访问开关 + 统计栏标签(仅管理员) --- */
 function handleSettings(req, res) {
   const admin = requireAdmin(req, res);
   if (!admin) return json(res, 401, { error: '需要管理员权限' });
   readJsonBody(req, info => {
     if (typeof info.anonymous === 'boolean') {
       settings.anonymous = info.anonymous;
-      saveSettings();
     }
-    return json(res, 200, { anonymous: settings.anonymous !== false });
+    if (Array.isArray(info.links)) {                   // 统计栏自定义标签
+      const links = [];
+      info.links.forEach(l => {
+        const text = String((l && l.text) || '').trim().slice(0, 20);
+        const url = String((l && l.url) || '').trim().slice(0, 300);
+        // 只允许 http(s) 外链或站内路径, 防止 javascript: 等注入
+        if (!text || !url) return;
+        if (!/^(https?:\/\/|\/)/i.test(url)) return;
+        links.push({ text, url });
+      });
+      settings.links = links.slice(0, 20);
+    }
+    saveSettings();
+    return json(res, 200, {
+      anonymous: settings.anonymous !== false,
+      links: Array.isArray(settings.links) ? settings.links : [],
+    });
   });
 }
 

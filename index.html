@@ -205,6 +205,7 @@
       <span class="chip">已掌握 <b id="hKnown">0</b></span>
       <span class="chip">未掌握 <b id="hUnknown">0</b></span>
       <span class="chip">未学过 <b id="hNew">0</b></span>
+      <span id="linkChips" style="display:contents"></span>
       <span class="chip" id="userChip" style="display:none"></span>
       <span class="chip" id="adminChip" style="display:none"></span>
     </div>
@@ -913,6 +914,11 @@ document.getElementById('btnReset').addEventListener('click', () => {
     location.replace('/login.html?next=/');
     return;
   }
+  // 管理员配置的统计栏标签（外链新窗口打开）
+  const lc = document.getElementById('linkChips');
+  lc.innerHTML = (who.links || []).map(l =>
+    `<a class="chip" href="${escAttr(l.url)}"${/^https?:/i.test(l.url) ? ' target="_blank" rel="noopener"' : ''} style="color:#fff;text-decoration:none">${esc(l.text)}</a>`
+  ).join('');
   if (who.logged) {
     currentUser = who.user;          // 登录用户: 启用自测计数功能
     loadTestPass();

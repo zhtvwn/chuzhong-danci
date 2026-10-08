@@ -95,6 +95,22 @@
     <div class="tip">开启：任何人打开即可背单词（无需登录）。关闭：必须登录后才能访问学习页面；访问日志仅管理员可见。</div>
   </div>
 
+  <!-- 统计栏标签 -->
+  <div class="card">
+    <h2 class="sect">统计栏标签</h2>
+    <div class="tip" style="margin:0 0 10px">显示在首页统计栏（已掌握/未掌握/未学过之后），可指向站内页面或外部网址。</div>
+    <table>
+      <thead><tr><th>标签文字</th><th>链接</th><th style="text-align:right">操作</th></tr></thead>
+      <tbody id="linkTb"><tr><td colspan="3" style="color:#94a3b8">暂无标签</td></tr></tbody>
+    </table>
+    <div class="row" style="margin-top:12px">
+      <div class="grow"><label class="lbl">标签文字</label><input id="lt" placeholder="如：在线词典" maxlength="20"></div>
+      <div class="grow" style="flex:2"><label class="lbl">链接地址</label><input id="lu" placeholder="https://… 或 /logs.html"></div>
+      <button class="btn" onclick="addLink()">＋ 添加</button>
+    </div>
+    <div class="msg" id="linkMsg"></div>
+  </div>
+
   <!-- 用户列表 -->
   <div class="card">
     <h2 class="sect">用户列表</h2>
@@ -170,6 +186,46 @@ document.getElementById('anonTrack').addEventListener('click', async () => {
   if (r.ok) setAnon(target);
   else showMsg('addMsg', r.data.error || '操作失败', true);
 });
+
+/* 统计栏标签 */
+let links = [];
+
+async function loadLinks() {
+  const r = await fetch('/api/whoami').then(r => r.json());
+  links = r.links || [];
+  renderLinks();
+}
+function renderLinks() {
+  const tb = document.getElementById('linkTb');
+  if (!links.length) { tb.innerHTML = '<tr><td colspan="3" style="color:#94a3b8">暂无标签</td></tr>'; return; }
+  tb.innerHTML = links.map((l, i) => `
+    <tr>
+      <td><b>${esc(l.text)}</b></td>
+      <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#64748b">${esc(l.url)}</td>
+      <td style="text-align:right"><button class="btn ghost danger" onclick="delLink(${i})">删除</button></td>
+    </tr>`).join('');
+}
+async function saveLinks() {
+  const r = await post('/api/settings', { links });
+  if (r.ok) { links = r.data.links || links; renderLinks(); }
+  else showMsg('linkMsg', r.data.error || '保存失败', true);
+}
+async function addLink() {
+  const text = document.getElementById('lt').value.trim();
+  const url = document.getElementById('lu').value.trim();
+  if (!text || !url) return showMsg('linkMsg', '请填写标签文字和链接地址', true);
+  if (!/^(https?:\/\/|\/)/i.test(url)) return showMsg('linkMsg', '链接需以 http(s):// 或 / 开头', true);
+  links.push({ text, url });
+  document.getElementById('lt').value = '';
+  document.getElementById('lu').value = '';
+  await saveLinks();
+  showMsg('linkMsg', '已添加，刷新首页可见');
+}
+async function delLink(i) {
+  if (!confirm('确定删除标签「' + links[i].text + '」？')) return;
+  links.splice(i, 1);
+  await saveLinks();
+}
 
 /* 用户列表 */
 function fmtTime(ts) {
@@ -258,6 +314,7 @@ function gate() {
     me = w.user;
     document.getElementById('main').style.display = 'block';
     await loadAnon();
+    await loadLinks();
     await loadUsers();
   } catch (e) {
     gate();
