@@ -26,7 +26,7 @@ function loadJson(f, def) {
 }
 function saveJson(f, o) {
   try {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.mkdirSync(path.dirname(f), { recursive: true });   // 按文件所在目录建路径
     fs.writeFileSync(f, JSON.stringify(o, null, 1));
   } catch (e) { console.error('写文件失败 ' + f + ':', e.message); }
 }
@@ -266,9 +266,35 @@ function handleUsers(req, res, u) {
   res.writeHead(405); res.end();
 }
 
-/* --- 修改自己的密码(任何已登录用户) --- */
-function handleMyPass(req, res) {
+/* --- 自测通过记录(仅登录用户, 按用户分文件存储) --- */
+const TESTPASS_DIR = path.join(DATA_DIR, 'testpass');
+function testPassFile(user) {
+  return path.join(TESTPASS_DIR, encodeURIComponent(user) + '.json');
+}
+/* 与前端 norm() 一致: 小写 + 去掉字母数字/中文以外的字符, 同词多义合并计数 */
+function normKey(w) {
+  return String(w || '').toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]/g, '');
+}
+
+function handleTestPass(req, res) {
   const s = getSession(req);
+  if (!s) return json(res, 401, { error: '请先登录' });   // 匿名不记录
+  if (req.method === 'GET') {
+    return json(res, 200, { pass: loadJson(testPassFile(s.user), {}) });
+  }
+  readJsonBody(req, info => {                             // POST: 答对 +1
+    const w = normKey(info.w);
+    if (!w || w.length > 60) return json(res, 400, { error: 'bad word' });
+    const f = testPassFile(s.user);
+    const pass = loadJson(f, {});
+    pass[w] = (pass[w] || 0) + 1;
+    saveJson(f, pass);
+    return json(res, 200, { word: w, count: pass[w] });
+  });
+}
+
+/* --- 修改自己的密码(任何已登录用户) --- */
+function handleMyPass(req, res) {  const s = getSession(req);
   if (!s) return json(res, 401, { error: '请先登录' });
   readJsonBody(req, info => {
     const u = users.find(x => x.user === s.user);
@@ -406,6 +432,8 @@ http.createServer((req, res) => {
   if ((req.method === 'GET' || req.method === 'POST' || req.method === 'DELETE') && p === '/api/users')
     return handleUsers(req, res, u);
   if (req.method === 'POST' && p === '/api/me/pass') return handleMyPass(req, res);
+  if ((req.method === 'GET' || req.method === 'POST') && p === '/api/testpass')
+    return handleTestPass(req, res);
   if (req.method === 'POST' && p === '/api/settings') return handleSettings(req, res);
   if (req.method === 'GET') return serveStatic(req, res, u);
   res.writeHead(405); res.end();

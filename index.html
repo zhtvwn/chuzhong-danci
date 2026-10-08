@@ -151,6 +151,7 @@
   .badge { font-size: 10px; padding: 2px 8px; border-radius: 12px; font-weight: 600; }
   .badge.new { background: #fef3c7; color: #b45309; }
   .badge.known { background: #d1fae5; color: #047857; }
+  .badge.tpass { background: #ccfbf1; color: #0f766e; }
   .badge.unknown { background: #fee2e2; color: #b91c1c; }
   .badge.part { background: #e0e7ff; color: #4338ca; white-space: nowrap; }
   .badge.cat { background: #f1f5f9; color: #475569; max-width: 12em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -583,6 +584,31 @@ document.addEventListener('keydown', e => {
 
 /* ================= 自测 ================= */
 let quiz = [], qi = 0, score = 0, wrongWords = [];
+let currentUser = null;      // 登录用户名（匿名为 null, 不记录自测）
+let testPass = {};            // 单词 -> 自测通过次数（登录后从服务端加载）
+
+/* 自测答对 → 计数 +1（服务端按登录用户存储） */
+function recordPass(w) {
+  const k = norm(w);
+  if (!k) return 0;
+  testPass[k] = (testPass[k] || 0) + 1;
+  fetch('/api/testpass', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ w }),
+  }).catch(() => {});
+  return testPass[k];
+}
+
+async function loadTestPass() {
+  try {
+    const r = await fetch('/api/testpass');
+    if (r.status === 401) { testPass = {}; return; }
+    const d = await r.json();
+    testPass = d.pass || {};
+    renderList();          // 词表刷新出「自测×N」徽标
+  } catch (e) {}
+}
 
 document.getElementById('btnStartTest').addEventListener('click', () => {
   const pool = scopeFilter(document.getElementById('testScope').value,
@@ -692,7 +718,12 @@ function answer(btn, ok, chosen, q, typed) {
   }
   if (ok) {
     score++;
-    after.innerHTML = `<div class="feedback ok">✅ 回答正确！</div>`;
+    let fb = `<div class="feedback ok">✅ 回答正确！</div>`;
+    if (currentUser) {          // 登录用户: 记录自测通过次数
+      const n = recordPass(q.item.w);
+      fb = `<div class="feedback ok">✅ 回答正确！<span style="font-size:12px">（自测累计通过 ${n} 次）</span></div>`;
+    }
+    after.innerHTML = fb;
   } else {
     wrongWords.push(q.item);
     let html = `<div class="feedback no">❌ 正确答案：<b>${esc(q.item.w)}</b>`;
@@ -726,6 +757,7 @@ function finishTest() {
   });
   showView('testResult');
   updateHeader();
+  if (currentUser) renderList();   // 登录用户: 词表更新「自测×N」徽标
 }
 
 document.getElementById('btnRetest').addEventListener('click', () => showView('testSetup'));
@@ -822,6 +854,7 @@ function renderList() {
         ${anyNew ? `<span class="badge new">2022新增</span>` : ''}
         ${st === true ? `<span class="badge known">已掌握</span>` : ''}
         ${st === false ? `<span class="badge unknown">未掌握</span>` : ''}
+        ${(currentUser && testPass[norm(x.w)]) ? `<span class="badge tpass" title="自测通过次数">自测×${testPass[norm(x.w)]}</span>` : ''}
       </div>
       <div class="m">${esc(shortMeaning(x.m))}${x.n ? '　·　' + esc(x.n) : ''}</div>
       ${extra}`;
@@ -880,6 +913,8 @@ document.getElementById('btnReset').addEventListener('click', () => {
     return;
   }
   if (who.logged) {
+    currentUser = who.user;          // 登录用户: 启用自测计数功能
+    loadTestPass();
     const c = document.getElementById('userChip');
     c.style.display = 'inline-block';
     c.innerHTML = '👤 ' + who.user +
