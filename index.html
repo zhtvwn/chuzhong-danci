@@ -203,6 +203,8 @@
       <span class="chip">已掌握 <b id="hKnown">0</b></span>
       <span class="chip">未掌握 <b id="hUnknown">0</b></span>
       <span class="chip">未学过 <b id="hNew">0</b></span>
+      <span class="chip" id="userChip" style="display:none"></span>
+      <span class="chip" id="adminChip" style="display:none"></span>
     </div>
   </header>
 
@@ -867,23 +869,51 @@ document.getElementById('btnReset').addEventListener('click', () => {
   }
 });
 
-/* ================= 访问日志打点（每会话一次） ================= */
-try {
-  if (!sessionStorage.getItem('vlog')) {
-    sessionStorage.setItem('vlog', '1');
-    fetch('/api/visit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ua: navigator.userAgent,
-        lang: navigator.language,
-        screen: screen.width + 'x' + screen.height,
-        ref: document.referrer,
-        page: 'index',
-      }),
-    }).catch(() => {});
+/* ================= 登录态检查 + 访问日志打点（每会话一次） ================= */
+(async () => {
+  let who = { logged: false, anonymous: true };
+  try { who = await (await fetch('/api/whoami')).json(); } catch (e) {}
+  // 匿名访问被关闭且未登录 → 跳登录页（服务端已强制, 此为兜底）
+  if (!who.logged && !who.anonymous) {
+    sessionStorage.removeItem('vlog');
+    location.replace('/login.html?next=/');
+    return;
   }
-} catch (e) { /* 隐私模式等场景静默失败 */ }
+  if (who.logged) {
+    const c = document.getElementById('userChip');
+    c.style.display = 'inline-block';
+    c.innerHTML = '👤 ' + who.user +
+      ' <a href="#" id="lnkLogout" style="color:#fff;font-size:12px;margin-left:4px">退出</a>';
+    document.getElementById('lnkLogout').addEventListener('click', async e => {
+      e.preventDefault();
+      try { await fetch('/api/logout', { method: 'POST' }); } catch (ex) {}
+      sessionStorage.removeItem('vlog');
+      location.reload();
+    });
+    if (who.role === 'admin') {
+      const a = document.getElementById('adminChip');
+      a.style.display = 'inline-block';
+      a.innerHTML = '<a href="/logs.html" style="color:#fff;text-decoration:none">📊 日志</a>' +
+        '&nbsp;<a href="/admin.html" style="color:#fff;text-decoration:none">⚙ 管理</a>';
+    }
+  }
+  try {
+    if (!sessionStorage.getItem('vlog')) {
+      sessionStorage.setItem('vlog', '1');
+      fetch('/api/visit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ua: navigator.userAgent,
+          lang: navigator.language,
+          screen: screen.width + 'x' + screen.height,
+          ref: document.referrer,
+          page: 'index',
+        }),
+      }).catch(() => {});
+    }
+  } catch (e) { /* 隐私模式等场景静默失败 */ }
+})();
 
 updateHeader();
 </script>

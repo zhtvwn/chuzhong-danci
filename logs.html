@@ -65,7 +65,7 @@
 <div class="wrap">
   <header>
     <h1>📊 访问日志</h1>
-    <div class="sub">登录 IP · 登录时间 · 设备统计 &nbsp;|&nbsp; <a class="back" href="/">← 返回背单词</a></div>
+    <div class="sub">登录 IP · 登录时间 · 设备统计 &nbsp;|&nbsp; <a class="back" href="/">← 返回背单词</a> &nbsp;·&nbsp; <a class="back" href="/admin.html">⚙ 用户管理</a></div>
     <div class="row">
       <button class="btn ghost" style="background:rgba(255,255,255,.2);color:#fff" onclick="load()">↻ 刷新</button>
       <span class="sub" id="lastUpdate"></span>
@@ -104,7 +104,7 @@
     <h2>最近访问明细（点击行展开 UA）</h2>
     <div style="overflow-x:auto">
       <table>
-        <thead><tr><th>时间</th><th>IP 地址</th><th>设备</th><th>屏幕 / 语言</th><th>来源页</th></tr></thead>
+        <thead><tr><th>时间</th><th>用户</th><th>IP 地址</th><th>设备</th><th>屏幕 / 语言</th><th>来源页</th></tr></thead>
         <tbody id="logs"></tbody>
       </table>
     </div>
@@ -126,7 +126,11 @@ function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').re
 async function load() {
   try {
     const r = await fetch('/api/logs' + (token() ? '?token=' + encodeURIComponent(token()) : ''));
-    if (r.status === 401) { document.getElementById('tokenBar').style.display = 'block'; return; }
+    if (r.status === 401) {
+      if (timer) clearInterval(timer);   // 未登录(非管理员) → 跳登录页
+      location.replace('/login.html?next=/logs.html');
+      return;
+    }
     const d = await r.json();
     document.getElementById('tokenBar').style.display = 'none';
     document.getElementById('sTodayPv').textContent = d.todayPv;
@@ -175,6 +179,7 @@ function renderLogs(list) {
   tb.innerHTML = list.map((v, i) => `
     <tr class="log-item" onclick="this.classList.toggle('open')">
       <td style="white-space:nowrap">${esc(v.time)}</td>
+      <td>${esc(v.user || '匿名')}</td>
       <td>${esc(v.ip)}</td>
       <td><span class="tag ${esc(v.device)}">${esc(v.device)}</span></td>
       <td>${esc(v.screen || '–')}<br><span style="color:#94a3b8">${esc(v.lang || '')}</span></td>

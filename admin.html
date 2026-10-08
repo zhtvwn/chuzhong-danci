@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>用户管理 · 初中考纲词汇</title>
+<style>
+  :root {
+    --primary: #6366f1; --primary-dark: #4f46e5; --bg: #f1f5f9; --card: #fff;
+    --text: #1e293b; --muted: #64748b; --green: #10b981; --red: #ef4444;
+    --amber: #f59e0b; --radius: 16px; --shadow: 0 4px 20px rgba(99,102,241,.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px 16px 60px; }
+  header {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 60%, #a855f7 100%);
+    color: #fff; border-radius: 0 0 24px 24px; padding: 22px 20px 18px;
+    margin-bottom: 16px; box-shadow: var(--shadow);
+  }
+  header h1 { font-size: 20px; font-weight: 700; }
+  header .sub { font-size: 12px; opacity: .85; margin-top: 4px; }
+  header .sub a { color: #fff; }
+  .card {
+    background: var(--card); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 18px; margin-bottom: 14px;
+  }
+  h2.sect { font-size: 15px; margin-bottom: 12px; }
+  label.lbl { font-size: 13px; color: var(--muted); display: block; margin-bottom: 6px; }
+  input, select {
+    width: 100%; border: 1px solid #e2e8f0; border-radius: 12px;
+    padding: 11px 13px; font-size: 14px; outline: none; font-family: inherit; background: #f8fafc;
+  }
+  input:focus, select:focus { border-color: var(--primary); background: #fff; }
+  .row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .grow { flex: 1; min-width: 120px; }
+  button.btn {
+    border: none; border-radius: 12px; padding: 11px 18px; cursor: pointer;
+    font-family: inherit; font-size: 14px; font-weight: 600;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff;
+  }
+  button.btn:active { transform: scale(.97); }
+  button.btn.ghost {
+    background: none; border: 1px solid #e2e8f0; color: var(--muted); font-weight: 500;
+    padding: 7px 12px; font-size: 12px; border-radius: 10px;
+  }
+  button.btn.ghost.danger { color: var(--red); border-color: #fecaca; }
+  .switch { display: flex; align-items: center; gap: 12px; padding: 6px 0; }
+  .switch .track {
+    width: 48px; height: 27px; border-radius: 14px; background: #cbd5e1;
+    position: relative; cursor: pointer; transition: background .2s; flex-shrink: 0;
+  }
+  .switch .track.on { background: var(--green); }
+  .switch .knob {
+    position: absolute; top: 3px; left: 3px; width: 21px; height: 21px;
+    border-radius: 50%; background: #fff; transition: left .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  }
+  .switch .track.on .knob { left: 24px; }
+  .switch .desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .switch .desc b { color: var(--text); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--muted); font-weight: 500; padding: 8px 6px; font-size: 12px; }
+  td { padding: 10px 6px; border-top: 1px solid #f1f5f9; vertical-align: middle; }
+  .tag {
+    display: inline-block; border-radius: 8px; padding: 2px 9px; font-size: 12px; font-weight: 600;
+  }
+  .tag.admin { background: #fef3c7; color: #b45309; }
+  .tag.user { background: #e0e7ff; color: #4f46e5; }
+  .ops { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .msg { text-align: center; font-size: 13px; color: var(--green); min-height: 18px; margin-top: 8px; }
+  .msg.err { color: var(--red); }
+  .tip { font-size: 12px; color: var(--muted); margin-top: 10px; line-height: 1.6; }
+  #gate { display: none; text-align: center; padding: 80px 20px; color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap" id="main" style="display:none">
+  <header>
+    <h1>⚙️ 用户管理</h1>
+    <div class="sub">
+      <a href="/">← 返回背单词</a> &nbsp;·&nbsp; <a href="/logs.html">📊 访问日志</a>
+    </div>
+  </header>
+
+  <!-- 匿名访问开关 -->
+  <div class="card">
+    <h2 class="sect">匿名访问开关</h2>
+    <div class="switch">
+      <div class="track" id="anonTrack"><div class="knob"></div></div>
+      <div class="desc" id="anonDesc"></div>
+    </div>
+    <div class="tip">开启：任何人打开即可背单词（无需登录）。关闭：必须登录后才能访问学习页面；访问日志仅管理员可见。</div>
+  </div>
+
+  <!-- 用户列表 -->
+  <div class="card">
+    <h2 class="sect">用户列表</h2>
+    <table>
+      <thead><tr><th>用户名</th><th>权限</th><th>创建时间</th><th style="text-align:right">操作</th></tr></thead>
+      <tbody id="tb"></tbody>
+    </table>
+  </div>
+
+  <!-- 添加用户 -->
+  <div class="card">
+    <h2 class="sect">添加用户</h2>
+    <div class="row">
+      <div class="grow"><label class="lbl">用户名</label><input id="nu" placeholder="2-20 位字母/数字/中文"></div>
+      <div class="grow"><label class="lbl">密码</label><input id="np" type="password" placeholder="至少 4 位"></div>
+      <div class="grow"><label class="lbl">权限</label>
+        <select id="nr"><option value="user">普通用户</option><option value="admin">管理员</option></select>
+      </div>
+      <button class="btn" onclick="addUser()">＋ 添加</button>
+    </div>
+    <div class="msg" id="addMsg"></div>
+  </div>
+
+  <!-- 修改自己的密码 -->
+  <div class="card">
+    <h2 class="sect">修改我的密码</h2>
+    <div class="row">
+      <div class="grow"><label class="lbl">原密码</label><input id="op" type="password"></div>
+      <div class="grow"><label class="lbl">新密码</label><input id="nwp" type="password" placeholder="至少 4 位"></div>
+      <button class="btn" onclick="changeMyPass()">保存</button>
+    </div>
+    <div class="msg" id="passMsg"></div>
+  </div>
+</div>
+
+<div id="gate">正在验证管理员身份…</div>
+
+<script>
+let me = null;
+
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function post(url, body) {
+  const r = await fetch(url, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  return { ok: r.ok, status: r.status, data: await r.json().catch(() => ({})) };
+}
+
+function showMsg(id, text, isErr) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = 'msg' + (isErr ? ' err' : '');
+  setTimeout(() => { el.textContent = ''; }, 3000);
+}
+
+/* 匿名访问开关 */
+async function loadAnon() {
+  const r = await fetch('/api/whoami').then(r => r.json());
+  setAnon(r.anonymous !== false);
+}
+function setAnon(on) {
+  const track = document.getElementById('anonTrack');
+  const desc = document.getElementById('anonDesc');
+  track.classList.toggle('on', on);
+  desc.innerHTML = on
+    ? '<b>已开启</b> · 无需登录即可背单词'
+    : '<b>已关闭</b> · 访问学习页面需要登录';
+}
+document.getElementById('anonTrack').addEventListener('click', async () => {
+  const target = !document.getElementById('anonTrack').classList.contains('on');
+  const r = await post('/api/settings', { anonymous: target });
+  if (r.ok) setAnon(target);
+  else showMsg('addMsg', r.data.error || '操作失败', true);
+});
+
+/* 用户列表 */
+function fmtTime(ts) {
+  const d = new Date(ts + 8 * 3600 * 1000);
+  const p = n => String(n).padStart(2, '0');
+  return d.getUTCFullYear() + '-' + p(d.getUTCMonth() + 1) + '-' + p(d.getUTCDate());
+}
+
+async function loadUsers() {
+  const r = await fetch('/api/users');
+  if (r.status === 401) return gate();
+  const d = await r.json();
+  document.getElementById('tb').innerHTML = d.users.map(u => `
+    <tr>
+      <td><b>${esc(u.user)}</b>${u.user === me ? ' <span style="color:#94a3b8">(我)</span>' : ''}</td>
+      <td><span class="tag ${u.role}">${u.role === 'admin' ? '管理员' : '普通用户'}</span></td>
+      <td style="color:#94a3b8">${fmtTime(u.created)}</td>
+      <td><div class="ops">
+        <button class="btn ghost" onclick="resetPass('${esc(u.user)}')">改密码</button>
+        <button class="btn ghost" onclick="toggleRole('${esc(u.user)}','${u.role === 'admin' ? 'user' : 'admin'}')">${u.role === 'admin' ? '设为普通' : '设为管理员'}</button>
+        ${u.user === me ? '' : `<button class="btn ghost danger" onclick="delUser('${esc(u.user)}')">删除</button>`}
+      </div></td>
+    </tr>`).join('');
+}
+
+async function addUser() {
+  const user = document.getElementById('nu').value.trim();
+  const pass = document.getElementById('np').value;
+  const role = document.getElementById('nr').value;
+  if (!user || !pass) return showMsg('addMsg', '请填写用户名和密码', true);
+  const r = await post('/api/users', { user, pass, role });
+  if (r.ok) {
+    document.getElementById('nu').value = '';
+    document.getElementById('np').value = '';
+    showMsg('addMsg', '已添加用户 ' + user);
+    loadUsers();
+  } else showMsg('addMsg', r.data.error || '添加失败', true);
+}
+
+async function resetPass(name) {
+  const pass = prompt('为「' + name + '」设置新密码（至少 4 位）：');
+  if (pass === null) return;
+  const r = await post('/api/users', { user: name, pass });
+  showMsg('addMsg', r.ok ? '已重置 ' + name + ' 的密码（该用户需重新登录）' : (r.data.error || '失败'), !r.ok);
+  loadUsers();
+}
+
+async function toggleRole(name, role) {
+  if (!confirm('将「' + name + '」' + (role === 'admin' ? '设为管理员' : '设为普通用户') + '？')) return;
+  const r = await post('/api/users', { user: name, role });
+  if (!r.ok) showMsg('addMsg', r.data.error || '操作失败', true);
+  loadUsers();
+}
+
+async function delUser(name) {
+  if (!confirm('确定删除用户「' + name + '」？该操作不可恢复。')) return;
+  const r = await fetch('/api/users?user=' + encodeURIComponent(name), { method: 'DELETE' });
+  const d = await r.json().catch(() => ({}));
+  if (r.ok) { showMsg('addMsg', '已删除 ' + name); loadUsers(); }
+  else showMsg('addMsg', d.error || '删除失败', true);
+}
+
+async function changeMyPass() {
+  const oldPass = document.getElementById('op').value;
+  const newPass = document.getElementById('nwp').value;
+  if (!oldPass || !newPass) return showMsg('passMsg', '请填写原密码和新密码', true);
+  const r = await post('/api/me/pass', { oldPass, newPass });
+  if (r.ok) {
+    document.getElementById('op').value = '';
+    document.getElementById('nwp').value = '';
+    showMsg('passMsg', '密码已修改');
+  } else showMsg('passMsg', r.data.error || '修改失败', true);
+}
+
+function gate() {
+  document.getElementById('main').style.display = 'none';
+  const g = document.getElementById('gate');
+  g.style.display = 'block';
+  g.innerHTML = '需要管理员权限，请先<a href="/login.html?next=/admin.html" style="color:var(--primary)">登录管理员账号</a>';
+}
+
+(async () => {
+  try {
+    const w = await fetch('/api/whoami').then(r => r.json());
+    if (!w.logged || w.role !== 'admin') return gate();
+    me = w.user;
+    document.getElementById('main').style.display = 'block';
+    await loadAnon();
+    await loadUsers();
+  } catch (e) {
+    gate();
+  }
+})();
+</script>
+</body>
+</html>

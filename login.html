@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录 · 初中考纲词汇</title>
+<style>
+  :root {
+    --primary: #6366f1; --primary-dark: #4f46e5; --bg: #f1f5f9; --card: #fff;
+    --text: #1e293b; --muted: #64748b; --red: #ef4444;
+    --radius: 16px; --shadow: 0 4px 20px rgba(99,102,241,.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+  }
+  .box { width: 100%; max-width: 380px; }
+  header {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 60%, #a855f7 100%);
+    color: #fff; border-radius: 24px; padding: 28px 22px; text-align: center;
+    box-shadow: var(--shadow); margin-bottom: 16px;
+  }
+  header h1 { font-size: 20px; font-weight: 700; letter-spacing: .5px; }
+  header .sub { font-size: 12px; opacity: .85; margin-top: 6px; }
+  .card {
+    background: var(--card); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 22px;
+  }
+  label.lbl { font-size: 13px; color: var(--muted); display: block; margin-bottom: 6px; }
+  input {
+    width: 100%; border: 1px solid #e2e8f0; border-radius: 12px;
+    padding: 12px 14px; font-size: 15px; margin-bottom: 14px;
+    outline: none; font-family: inherit; background: #f8fafc;
+  }
+  input:focus { border-color: var(--primary); background: #fff; }
+  button.btn {
+    width: 100%; border: none; border-radius: 12px; padding: 13px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  button.btn:active { transform: scale(.98); }
+  button.btn[disabled] { opacity: .6; }
+  .err { color: var(--red); font-size: 13px; text-align: center; min-height: 18px; margin-bottom: 8px; }
+  .foot { text-align: center; margin-top: 18px; font-size: 13px; }
+  .foot a { color: var(--primary); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="box">
+  <header>
+    <h1>📖 初中考纲词汇</h1>
+    <div class="sub">请登录后继续使用</div>
+  </header>
+  <div class="card">
+    <form id="f" autocomplete="off">
+      <label class="lbl">用户名</label>
+      <input id="user" name="user" placeholder="请输入用户名" required>
+      <label class="lbl">密码</label>
+      <input id="pass" name="pass" type="password" placeholder="请输入密码" required>
+      <div class="err" id="err"></div>
+      <button class="btn" id="btn" type="submit">登 录</button>
+    </form>
+  </div>
+  <div class="foot"><a href="/" id="back">← 返回首页</a></div>
+</div>
+
+<script>
+const qs = new URLSearchParams(location.search);
+const next = qs.get('next') || '/';
+// 只允许站内跳转
+const safeNext = next.startsWith('/') && !next.startsWith('//') ? next : '/';
+if (safeNext === '/') document.getElementById('back').style.display = 'none';
+
+document.getElementById('f').addEventListener('submit', async e => {
+  e.preventDefault();
+  const err = document.getElementById('err');
+  const btn = document.getElementById('btn');
+  err.textContent = '';
+  btn.disabled = true; btn.textContent = '登录中…';
+  try {
+    const r = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user: document.getElementById('user').value.trim(),
+        pass: document.getElementById('pass').value,
+      }),
+    });
+    if (r.ok) {
+      sessionStorage.removeItem('vlog');   // 换人后重新打访问点
+      location.replace(safeNext);
+      return;
+    }
+    const d = await r.json().catch(() => ({}));
+    err.textContent = d.error || '登录失败，请重试';
+  } catch (ex) {
+    err.textContent = '网络错误，请重试';
+  }
+  btn.disabled = false; btn.textContent = '登 录';
+});
+
+// 已登录的直接跳走
+fetch('/api/whoami').then(r => r.json())
+  .then(d => { if (d.logged) location.replace(safeNext); })
+  .catch(() => {});
+</script>
+</body>
+</html>
