@@ -726,7 +726,9 @@ function spellAnswers(w) {
 }
 
 function pickDistractors(target, keyFn, n) {
-  const pool = WORDS.filter(x => x !== target && keyFn(x) && keyFn(x) !== keyFn(target));
+  // norm 相同的同名词条(us/US、may/May)不作干扰项, 避免选项视觉重复且误判对错
+  const pool = WORDS.filter(x => x !== target && keyFn(x) && keyFn(x) !== keyFn(target)
+    && norm(x.w) !== norm(target.w));
   return shuffle(pool).slice(0, n);
 }
 

@@ -27,7 +27,10 @@ function loadJson(f, def) {
 function saveJson(f, o) {
   try {
     fs.mkdirSync(path.dirname(f), { recursive: true });   // 按文件所在目录建路径
-    fs.writeFileSync(f, JSON.stringify(o, null, 1));
+    /* 原子写: 先写临时文件再改名, 避免断电/进程异常导致 users.json 等损坏 */
+    const tmp = f + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(o, null, 1));
+    fs.renameSync(tmp, f);
   } catch (e) { console.error('写文件失败 ' + f + ':', e.message); }
 }
 
@@ -162,6 +165,11 @@ function loginFail(ip) {
   const f = loginFails[ip] = loginFails[ip] || { n: 0, until: 0 };
   f.n += 1;
   if (f.n >= 5) { f.until = Date.now() + 60000; f.n = 0; }
+  if (Object.keys(loginFails).length > 500) {         // 防 XFF 伪造导致的无限增长
+    for (const k of Object.keys(loginFails)) {
+      if (Date.now() >= (loginFails[k].until || 0)) delete loginFails[k];
+    }
+  }
 }
 
 function handleLogin(req, res) {
@@ -306,6 +314,9 @@ function handleMyPass(req, res) {  const s = getSession(req);
     u.salt = crypto.randomBytes(8).toString('hex');
     u.hash = hashPass(info.newPass, u.salt);
     saveUsers();
+    /* 与管理员改密一致: 改密后踢掉该用户所有旧会话, 需重新登录 */
+    for (const k of Object.keys(sessions)) if (sessions[k].user === s.user) delete sessions[k];
+    saveSessions();
     return json(res, 200, { ok: true });
   });
 }
@@ -344,6 +355,10 @@ function handleVisit(req, res) {
   req.on('end', () => {
     let info = {};
     try { info = JSON.parse(body || '{}'); } catch (e) {}
+    /* 匿名访问已关闭且未登录: 不记录(防止越权打点污染日志) */
+    if (settings.anonymous === false && !getSession(req)) {
+      res.writeHead(403); return res.end();
+    }
     const ua = String(info.ua || req.headers['user-agent'] || '').slice(0, 400);
     const sess = getSession(req);                    // 服务端盖章登录用户, 不信任前端
     const v = {
