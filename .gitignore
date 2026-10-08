@@ -13,3 +13,4 @@ words.js.bak
 .codebuddy/
 .vscode/
 .idea/
+.playwright-cli/
