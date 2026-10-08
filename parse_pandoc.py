@@ -139,7 +139,7 @@ RECOVER = {
     '772':  ('kitchen',    '/ˈkɪtʃɪn/',     False),
     '1153': ('question',   '/ˈkwestʃən/',   False),
 }
-SHIFT = {'P30-33', 'W P58 61'}
+SHIFT = {'P30-33', 'W P58 61', '-'}   # 分页错位行: 首格是页码标记/'-', 真正序号在第二格
 
 SPACE_FIX = {'getup': 'get up', 'lookup': 'look up', 'pickup': 'pick up',
              'setup': 'set up', 'speedup': 'speed up', 'goodtime': 'good time'}
@@ -461,7 +461,9 @@ def handle_table(x):
         cat = state['cat']
     for cells in rows:
         idx = cells[0].strip()
-        if re.match(r'^\d+$', idx) and len(cells) >= 3 and part in (1, 2):
+        idx0 = ' '.join(idx.split())
+        # 数字序号行, 或首格为页码标记/破折号的位移行(真序号在第二格)
+        if (re.match(r'^\d+$', idx) or idx0 in SHIFT) and len(cells) >= 3 and part in (1, 2):
             parse_digit_row(cells, part, state['day'])
             continue
         if part == 3 and len(cells) >= 3:

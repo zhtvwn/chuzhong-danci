@@ -6,7 +6,7 @@ RUN apk add --no-cache tzdata
 WORKDIR /app
 
 # 只复制运行必需文件（词库 JSON 体积大，不进镜像）
-COPY index.html words.js logs.html server.js ./
+COPY index.html words.js logs.html login.html admin.html server.js ./
 
 RUN mkdir -p /app/data
 
