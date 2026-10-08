@@ -896,6 +896,11 @@ document.getElementById('btnReset').addEventListener('click', () => {
       a.innerHTML = '<a href="/logs.html" style="color:#fff;text-decoration:none">📊 日志</a>' +
         '&nbsp;<a href="/admin.html" style="color:#fff;text-decoration:none">⚙ 管理</a>';
     }
+  } else {
+    // 匿名访问已开启且未登录 → 显示登录入口（管理员/用户由此登录）
+    const c = document.getElementById('userChip');
+    c.style.display = 'inline-block';
+    c.innerHTML = '<a href="/login.html?next=/" style="color:#fff;text-decoration:none">🔐 登录</a>';
   }
   try {
     if (!sessionStorage.getItem('vlog')) {
