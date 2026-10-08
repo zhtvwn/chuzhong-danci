@@ -34,14 +34,20 @@
     box-shadow: var(--shadow);
   }
   header h1 { font-size: 20px; font-weight: 700; letter-spacing: .5px; }
+  .header-top { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; }
+  .header-top h1 { margin-right: auto; white-space: nowrap; }
+  #authBox {
+    display: none; margin-left: auto;      /* 登录区整体靠右, 窄屏换行也保持右对齐 */
+    align-items: flex-start; gap: 8px; flex-wrap: wrap; justify-content: flex-end;
+  }
   header .sub { font-size: 12px; opacity: .85; margin-top: 4px; }
   header .stats-chips { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
   .chip {
     background: rgba(255,255,255,.18); border-radius: 20px;
     padding: 5px 12px; font-size: 12px; backdrop-filter: blur(4px);
+    white-space: nowrap;
   }
   .chip b { font-size: 13px; }
-  #userChip { margin-left: auto; }   /* 登录/用户/退出/日志 → 推到统计栏右侧 */
   a.chip { cursor: pointer; transition: background .15s, transform .15s; }
   a.chip:hover { background: rgba(255,255,255,.34); transform: translateY(-1px); }
 
@@ -202,15 +208,19 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>📖 初中考纲词汇</h1>
+    <div class="header-top">
+      <h1>📖 初中考纲词汇</h1>
+      <span id="authBox">
+        <span class="chip" id="userChip" style="display:none"></span>
+        <span class="chip" id="adminChip" style="display:none"></span>
+      </span>
+    </div>
     <div class="sub">考纲词汇 5 大部分 · 43 天 · 共 <span id="hTotal">0</span> 词条</div>
     <div class="stats-chips">
       <span class="chip">已掌握 <b id="hKnown">0</b></span>
       <span class="chip">未掌握 <b id="hUnknown">0</b></span>
       <span class="chip">未学过 <b id="hNew">0</b></span>
       <span id="linkChips" style="display:contents"></span>
-      <span class="chip" id="userChip" style="display:none"></span>
-      <span class="chip" id="adminChip" style="display:none"></span>
     </div>
   </header>
 
@@ -925,6 +935,7 @@ document.getElementById('btnReset').addEventListener('click', () => {
   if (who.logged) {
     currentUser = who.user;          // 登录用户: 启用自测计数功能
     loadTestPass();
+    document.getElementById('authBox').style.display = 'flex';
     const c = document.getElementById('userChip');
     c.style.display = 'inline-block';
     c.innerHTML = '👤 ' + who.user +
@@ -946,6 +957,7 @@ document.getElementById('btnReset').addEventListener('click', () => {
     const c = document.getElementById('userChip');
     c.style.display = 'inline-block';
     c.innerHTML = '<a href="/login.html?next=/" style="color:#fff;text-decoration:none">🔐 登录</a>';
+    document.getElementById('authBox').style.display = 'flex';
   }
   try {
     if (!sessionStorage.getItem('vlog')) {
