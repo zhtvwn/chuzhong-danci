@@ -7,41 +7,40 @@
 <title>登录 · 初中考纲词汇</title>
 <style>
   :root {
-    --primary: #6366f1; --primary-dark: #4f46e5; --bg: #f1f5f9; --card: #fff;
-    --text: #1e293b; --muted: #64748b; --red: #ef4444;
-    --radius: 16px; --shadow: 0 4px 20px rgba(99,102,241,.10);
+    --primary: #007AFF; --bg: #F2F2F7; --card: #fff;
+    --text: #1C1C1E; --muted: #8E8E93; --red: #FF3B30;
+    --radius: 12px; --shadow: 0 1px 10px rgba(0,0,0,.07);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
-    font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
     background: var(--bg); color: var(--text); min-height: 100vh;
     display: flex; align-items: center; justify-content: center; padding: 16px;
   }
   .box { width: 100%; max-width: 380px; }
   header {
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 60%, #a855f7 100%);
-    color: #fff; border-radius: 24px; padding: 28px 22px; text-align: center;
-    box-shadow: var(--shadow); margin-bottom: 16px;
+    color: var(--text); padding: 0 0 24px; text-align: center;
   }
-  header h1 { font-size: 20px; font-weight: 700; letter-spacing: .5px; }
-  header .sub { font-size: 12px; opacity: .85; margin-top: 6px; }
+  header h1 { font-size: 24px; font-weight: 800; letter-spacing: -.5px; }
+  header .sub { font-size: 13px; color: var(--muted); margin-top: 6px; }
   .card {
     background: var(--card); border-radius: var(--radius);
     box-shadow: var(--shadow); padding: 22px;
   }
   label.lbl { font-size: 13px; color: var(--muted); display: block; margin-bottom: 6px; }
   input {
-    width: 100%; border: 1px solid #e2e8f0; border-radius: 12px;
+    width: 100%; border: 1px solid #D1D1D6; border-radius: 10px;
     padding: 12px 14px; font-size: 15px; margin-bottom: 14px;
-    outline: none; font-family: inherit; background: #f8fafc;
+    outline: none; font-family: inherit; background: #F2F2F7;
   }
   input:focus { border-color: var(--primary); background: #fff; }
   button.btn {
     width: 100%; border: none; border-radius: 12px; padding: 13px;
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    background: var(--primary);
     color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;
+    transition: opacity .15s;
   }
-  button.btn:active { transform: scale(.98); }
+  button.btn:active { opacity: .4; }
   button.btn[disabled] { opacity: .6; }
   .err { color: var(--red); font-size: 13px; text-align: center; min-height: 18px; margin-bottom: 8px; }
   .foot { text-align: center; margin-top: 18px; font-size: 13px; }
