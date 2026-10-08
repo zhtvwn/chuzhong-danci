@@ -19,9 +19,21 @@
   header .sub { font-size: 12px; opacity:.85; margin-top:4px; }
   .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:12px; }
   .stat-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-bottom:14px; }
-  .stat { background:var(--card); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow); }
+  .stat { background:var(--card); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow); position:relative; overflow:hidden; }
   .stat .num { font-size:24px; font-weight:700; color:var(--primary); }
   .stat .lbl { font-size:12px; color:var(--muted); margin-top:2px; }
+  /* 手机端统计卡: 左色条 + 主题淡色底, 更紧凑清爽 */
+  @media (max-width: 640px) {
+    .stat-grid { gap: 8px; }
+    .stat { padding: 12px 12px 10px 15px; border-radius: 14px; box-shadow: none; }
+    .stat::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; }
+    .stat .num { font-size: 22px; }
+    .stat .lbl { font-size: 11px; margin-top: 1px; }
+    .stat:nth-child(1) { background:#eef2ff; } .stat:nth-child(1)::before { background:#6366f1; } .stat:nth-child(1) .num { color:#4f46e5; }
+    .stat:nth-child(2) { background:#ecfdf5; } .stat:nth-child(2)::before { background:#10b981; } .stat:nth-child(2) .num { color:#059669; }
+    .stat:nth-child(3) { background:#f5f3ff; } .stat:nth-child(3)::before { background:#8b5cf6; } .stat:nth-child(3) .num { color:#7c3aed; }
+    .stat:nth-child(4) { background:#fffbeb; } .stat:nth-child(4)::before { background:#f59e0b; } .stat:nth-child(4) .num { color:#d97706; }
+  }
   .card { background:var(--card); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); margin-bottom:14px; }
   .card h2 { font-size:14px; color:var(--muted); font-weight:600; margin-bottom:10px; }
   .bars { display:flex; align-items:flex-end; gap:4px; height:80px; }
@@ -80,7 +92,7 @@
   </div>
 
   <div class="stat-grid">
-    <div class="stat"><div class="num" id="sTodayPv">–</div><div class="lbl">今日访问（人次）</div></div>
+    <div class="stat"><div class="num" id="sTodayPv">–</div><div class="lbl">今日访问</div></div>
     <div class="stat"><div class="num" id="sTodayUv">–</div><div class="lbl">今日独立 IP</div></div>
     <div class="stat"><div class="num" id="sTotal">–</div><div class="lbl">累计访问</div></div>
     <div class="stat"><div class="num" id="sIps">–</div><div class="lbl">累计独立 IP</div></div>
