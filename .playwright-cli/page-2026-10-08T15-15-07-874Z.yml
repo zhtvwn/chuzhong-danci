@@ -1,0 +1,108 @@
+- generic [active] [ref=f2e1]:
+  - generic [ref=f2e2]:
+    - banner [ref=f2e3]:
+      - heading "📖 初中考纲词汇" [level=1] [ref=f2e4]
+      - generic [ref=f2e5]: 考纲词汇 5 大部分 · 43 天 · 共 3064 词条
+      - generic [ref=f2e6]:
+        - generic [ref=f2e7]: 已掌握 0
+        - generic [ref=f2e8]: 未掌握 0
+        - generic [ref=f2e9]: 未学过 3064
+        - generic [ref=f2e10]:
+          - link "📖 在线词典" [ref=f2e11] [cursor=pointer]:
+            - /url: https://dict.cn
+          - link "📚 电子教材" [ref=f2e12] [cursor=pointer]:
+            - /url: https://example.com
+        - generic [ref=f2e13]:
+          - text: 👤 admin
+          - link "退出" [ref=f2e14] [cursor=pointer]:
+            - /url: "#"
+        - generic [ref=f2e15]:
+          - link "📊 日志" [ref=f2e16] [cursor=pointer]:
+            - /url: /logs.html
+          - link "⚙ 管理" [ref=f2e17] [cursor=pointer]:
+            - /url: /admin.html
+    - generic [ref=f2e19]:
+      - heading "选择范围" [level=2] [ref=f2e20]
+      - generic [ref=f2e21]:
+        - generic [ref=f2e22]:
+          - generic [ref=f2e23]: 词库范围
+          - combobox [ref=f2e24]:
+            - option "全部词汇" [selected]
+            - option "未学过的词"
+            - option "未掌握的词"
+        - generic [ref=f2e25]:
+          - generic [ref=f2e26]: 顺序
+          - combobox [ref=f2e27]:
+            - option "按原文档顺序" [selected]
+            - option "随机顺序"
+      - generic [ref=f2e28]:
+        - generic [ref=f2e29]:
+          - generic [ref=f2e30]: PART 部分
+          - combobox [ref=f2e31]:
+            - option "全部 PART（1-5）" [selected]
+            - option "P1 PART 1 课标词汇"
+            - option "P2 PART 2 中考常考短语"
+            - option "P3 PART 3 不规则动词"
+            - option "P4 PART 4 完形填空高频短语"
+            - option "P5 PART 5 高频单词分类记"
+        - generic [ref=f2e32]:
+          - generic [ref=f2e33]: 天
+          - combobox [ref=f2e34]:
+            - option "全部天" [selected]
+            - option "第 1 天"
+            - option "第 2 天"
+            - option "第 3 天"
+            - option "第 4 天"
+            - option "第 5 天"
+            - option "第 6 天"
+            - option "第 7 天"
+            - option "第 8 天"
+            - option "第 9 天"
+            - option "第 10 天"
+            - option "第 11 天"
+            - option "第 12 天"
+            - option "第 13 天"
+            - option "第 14 天"
+            - option "第 15 天"
+            - option "第 16 天"
+            - option "第 17 天"
+            - option "第 18 天"
+            - option "第 19 天"
+            - option "第 20 天"
+            - option "第 21 天"
+            - option "第 22 天"
+            - option "第 23 天"
+            - option "第 24 天"
+            - option "第 25 天"
+            - option "第 26 天"
+            - option "第 27 天"
+            - option "第 28 天"
+            - option "第 29 天"
+            - option "第 30 天"
+            - option "第 31 天"
+            - option "第 32 天"
+            - option "第 33 天"
+            - option "第 34 天"
+            - option "第 35 天"
+            - option "第 36 天"
+            - option "第 37 天"
+            - option "第 38 天"
+            - option "第 39 天"
+            - option "第 40 天"
+            - option "第 41 天"
+            - option "第 42 天"
+            - option "第 43 天"
+      - button "开始背单词" [ref=f2e36] [cursor=pointer]
+  - navigation [ref=f2e37]:
+    - button "📖 背单词" [ref=f2e38] [cursor=pointer]:
+      - generic [ref=f2e39]: 📖
+      - text: 背单词
+    - button "📝 自测" [ref=f2e40] [cursor=pointer]:
+      - generic [ref=f2e41]: 📝
+      - text: 自测
+    - button "📚 词表" [ref=f2e42] [cursor=pointer]:
+      - generic [ref=f2e43]: 📚
+      - text: 词表
+    - button "📊 统计" [ref=f2e44] [cursor=pointer]:
+      - generic [ref=f2e45]: 📊
+      - text: 统计
