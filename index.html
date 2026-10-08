@@ -40,6 +40,10 @@
     display: none; margin-left: auto;      /* 登录区整体靠右, 窄屏换行也保持右对齐 */
     align-items: flex-start; gap: 8px; flex-wrap: wrap; justify-content: flex-end;
   }
+  @media (max-width: 640px) {               /* 手机: 登录/日志置顶一行, 标题退到第二行 */
+    .header-top h1 { order: 2; flex-basis: 100%; }
+    #authBox { order: 1; }
+  }
   header .sub { font-size: 12px; opacity: .85; margin-top: 4px; }
   header .stats-chips { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
   .chip {
