@@ -420,11 +420,16 @@
 /* ================= 数据与存储 ================= */
 const STORE_KEY = 'vocab_progress_v1';       // 旧版本地进度, 仅登录用户首次迁移时读取
 const SESSION_KEY = 'vocab_progress_anon';  // 匿名用户: 会话级进度, 关闭页面即清
+const SESSION_POS_KEY = 'vocab_learn_pos';  // 匿名用户: 会话级背单词断点
 let progress = loadAnonProgress();          // 先按匿名加载; 登录后由服务端数据替换
 let progressRemote = false;                 // true=已登录, 进度存服务端(按用户隔离)
+let learnPos = loadAnonPos();               // 背单词断点 {w, done}: 最后展示的卡片
 
 function loadAnonProgress() {
   try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)) || {}; } catch (e) { return {}; }
+}
+function loadAnonPos() {
+  try { return JSON.parse(sessionStorage.getItem(SESSION_POS_KEY)) || null; } catch (e) { return null; }
 }
 function saveLocalProgress() {
   try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(progress)); } catch (e) {}
@@ -436,6 +441,21 @@ function pushRemoteOne(p) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ set: [p] }),
   }).catch(() => {});
+}
+/* 背单词断点: 登录存服务端, 匿名存会话 */
+function saveLearnPos() {
+  if (progressRemote) {
+    fetch('/api/progress', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pos: learnPos }),
+    }).catch(() => {});
+  } else {
+    try {
+      if (learnPos) sessionStorage.setItem(SESSION_POS_KEY, JSON.stringify(learnPos));
+      else sessionStorage.removeItem(SESSION_POS_KEY);
+    } catch (e) {}
+  }
 }
 /* 登录用户首次使用: 旧本地进度整体迁移到服务端(分批, 防超请求体上限) */
 async function seedRemote(obj) {
@@ -458,6 +478,7 @@ async function initProgress() {
     if (r.status === 401) { progressRemote = false; return; }
     const d = await r.json();
     const remote = d.progress || {};
+    learnPos = d.pos || null;
     if (Object.keys(remote).length) {
       progress = remote;
     } else {
@@ -579,13 +600,24 @@ function shuffle(a) {
 /* ================= 背单词 ================= */
 let learnQueue = [], learnIdx = 0, learnShown = false, learnTotal = 0;
 
-/* 接上次背诵继续: 找到当前范围内最近标记过的词, 从它后面开始(循环队列)
- * 没有任何标记记录时退化为按原文档顺序; 进度记录自带时间戳, 无需额外存储 */
+/* 接上次背诵继续(循环队列):
+ * 1) 优先用背诵断点 learnPos: 记住上次最后展示的卡片, 即使没点认识/不认识也能续上
+ *    (标记过则从下一个词开始, 没标记则从这张卡重新开始)
+ * 2) 断点不在当前范围内时, 回退到范围内最近标记过的词之后
+ * 3) 都没有 → 按原文档顺序从头开始 */
 function resumeFrom(pool) {
-  let lastIdx = -1, lastT = 0;
+  if (learnPos && learnPos.w) {
+    const i = pool.findIndex(x => x.w === learnPos.w);
+    if (i >= 0) {
+      const start = learnPos.done ? i + 1 : i;
+      if (start < pool.length) return pool.slice(start).concat(pool.slice(0, start));
+      return pool;   // 上轮已背到范围末尾 → 从头再来
+    }
+  }
+  let lastIdx = -1, lastT = -1;
   pool.forEach((x, i) => {
     const p = progress[x.w];
-    if (p && p.t > lastT) { lastT = p.t; lastIdx = i; }
+    if (p && p.t >= lastT) { lastT = p.t; lastIdx = i; }   // 同毫秒取靠后的词
   });
   if (lastIdx < 0 || lastIdx >= pool.length - 1) return pool;
   return pool.slice(lastIdx + 1).concat(pool.slice(0, lastIdx + 1));
@@ -608,6 +640,8 @@ document.getElementById('btnStartLearn').addEventListener('click', () => {
 function showCard() {
   const it = learnQueue[learnIdx];
   learnShown = false;
+  learnPos = { w: it.w, done: false };   // 记录断点: 最后展示的卡片
+  saveLearnPos();
   document.getElementById('learnBar').style.width = (learnIdx / learnTotal * 100) + '%';
   document.getElementById('cardWord').textContent = it.w;
   document.getElementById('cardPhon').textContent = it.p || '';
@@ -629,6 +663,7 @@ function flipCard() {
 }
 
 function learnNext() {
+  if (learnPos) { learnPos.done = true; saveLearnPos(); }   // 已处理过当前卡(认识/不认识/模糊/跳过)
   learnIdx++;
   if (learnIdx >= learnQueue.length) {
     document.getElementById('learnBar').style.width = '100%';

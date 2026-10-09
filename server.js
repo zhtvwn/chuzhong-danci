@@ -307,29 +307,45 @@ const PROGRESS_DIR = path.join(DATA_DIR, 'progress');
 function progressFile(user) {
   return path.join(PROGRESS_DIR, encodeURIComponent(user) + '.json');
 }
+/* 文件格式 {v:2, words:{}, pos:null}; 兼容旧版扁平 {w:{k,c,t}} 结构 */
+function loadProgressStore(f) {
+  const d = loadJson(f, {});
+  if (d && d.v === 2) return d;
+  return { v: 2, words: (d && typeof d === 'object') ? d : {}, pos: null };
+}
 
 function handleProgress(req, res) {
   const s = getSession(req);
   if (!s) return json(res, 401, { error: '请先登录' });
   const f = progressFile(s.user);
   if (req.method === 'GET') {
-    return json(res, 200, { progress: loadJson(f, {}) });
+    const st = loadProgressStore(f);
+    return json(res, 200, { progress: st.words, pos: st.pos });
   }
-  if (req.method === 'DELETE') {            // 清空学习记录: 只影响当前用户
-    saveJson(f, {});
+  if (req.method === 'DELETE') {            // 清空学习记录: 只影响当前用户(断点也复位)
+    saveJson(f, { v: 2, words: {}, pos: null });
     return json(res, 200, { ok: true });
   }
-  readJsonBody(req, info => {               // POST: 增量合并 {set:[{w,k,c,t}]}
-    if (!Array.isArray(info.set)) return json(res, 400, { error: 'bad set' });
-    const prog = loadJson(f, {});
-    let n = 0;
-    for (const it of info.set) {
-      const w = String((it && it.w) || '');
-      if (!w || w.length > 60) continue;
-      prog[w] = { k: it.k === true, c: Number(it.c) || 0, t: Number(it.t) || Date.now() };
-      n++;
+  readJsonBody(req, info => {               // POST: {set:[{w,k,c,t}]} 增量 / {pos:{w,done}} 断点
+    const st = loadProgressStore(f);
+    let changed = false, n = 0;
+    if (Array.isArray(info.set)) {
+      for (const it of info.set) {
+        const w = String((it && it.w) || '');
+        if (!w || w.length > 60) continue;
+        st.words[w] = { k: it.k === true, c: Number(it.c) || 0, t: Number(it.t) || Date.now() };
+        n++; changed = true;
+      }
+      if (!n && info.pos === undefined) return json(res, 400, { error: 'bad set' });
     }
-    if (n) saveJson(f, prog);
+    if (info.pos !== undefined) {           // 背单词断点: null 复位 / {w, done}
+      if (info.pos === null) { st.pos = null; changed = true; }
+      else {
+        const w = String((info.pos && info.pos.w) || '');
+        if (w && w.length <= 60) { st.pos = { w, done: info.pos.done === true }; changed = true; }
+      }
+    }
+    if (changed) saveJson(f, st);
     return json(res, 200, { ok: true, saved: n });
   });
 }
