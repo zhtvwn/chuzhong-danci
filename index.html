@@ -252,6 +252,7 @@
           <label class="lbl">顺序</label>
           <select id="learnOrder">
             <option value="seq">按原文档顺序</option>
+            <option value="resume">接上次背诵继续</option>
             <option value="rand">随机顺序</option>
           </select>
         </div>
@@ -578,11 +579,26 @@ function shuffle(a) {
 /* ================= 背单词 ================= */
 let learnQueue = [], learnIdx = 0, learnShown = false, learnTotal = 0;
 
+/* 接上次背诵继续: 找到当前范围内最近标记过的词, 从它后面开始(循环队列)
+ * 没有任何标记记录时退化为按原文档顺序; 进度记录自带时间戳, 无需额外存储 */
+function resumeFrom(pool) {
+  let lastIdx = -1, lastT = 0;
+  pool.forEach((x, i) => {
+    const p = progress[x.w];
+    if (p && p.t > lastT) { lastT = p.t; lastIdx = i; }
+  });
+  if (lastIdx < 0 || lastIdx >= pool.length - 1) return pool;
+  return pool.slice(lastIdx + 1).concat(pool.slice(0, lastIdx + 1));
+}
+
 document.getElementById('btnStartLearn').addEventListener('click', () => {
   let pool = scopeFilter(document.getElementById('learnScope').value,
     +document.getElementById('learnPart').value, +document.getElementById('learnDay').value);
   if (!pool.length) { alert('该范围内没有词条，换一个范围试试。'); return; }
-  learnQueue = document.getElementById('learnOrder').value === 'rand' ? shuffle(pool) : pool;
+  const order = document.getElementById('learnOrder').value;
+  if (order === 'rand') learnQueue = shuffle(pool);
+  else if (order === 'resume') learnQueue = resumeFrom(pool);
+  else learnQueue = pool;
   learnIdx = 0; learnTotal = learnQueue.length;
   document.getElementById('learnArea').classList.remove('hidden');
   document.getElementById('btnStartLearn').closest('.card').classList.add('hidden');
