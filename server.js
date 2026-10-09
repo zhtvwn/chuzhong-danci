@@ -302,6 +302,38 @@ function handleTestPass(req, res) {
   });
 }
 
+/* --- 学习进度(仅登录用户, 按用户分文件存储, 各账号互不影响) --- */
+const PROGRESS_DIR = path.join(DATA_DIR, 'progress');
+function progressFile(user) {
+  return path.join(PROGRESS_DIR, encodeURIComponent(user) + '.json');
+}
+
+function handleProgress(req, res) {
+  const s = getSession(req);
+  if (!s) return json(res, 401, { error: '请先登录' });
+  const f = progressFile(s.user);
+  if (req.method === 'GET') {
+    return json(res, 200, { progress: loadJson(f, {}) });
+  }
+  if (req.method === 'DELETE') {            // 清空学习记录: 只影响当前用户
+    saveJson(f, {});
+    return json(res, 200, { ok: true });
+  }
+  readJsonBody(req, info => {               // POST: 增量合并 {set:[{w,k,c,t}]}
+    if (!Array.isArray(info.set)) return json(res, 400, { error: 'bad set' });
+    const prog = loadJson(f, {});
+    let n = 0;
+    for (const it of info.set) {
+      const w = String((it && it.w) || '');
+      if (!w || w.length > 60) continue;
+      prog[w] = { k: it.k === true, c: Number(it.c) || 0, t: Number(it.t) || Date.now() };
+      n++;
+    }
+    if (n) saveJson(f, prog);
+    return json(res, 200, { ok: true, saved: n });
+  });
+}
+
 /* --- 修改自己的密码(任何已登录用户) --- */
 function handleMyPass(req, res) {  const s = getSession(req);
   if (!s) return json(res, 401, { error: '请先登录' });
@@ -465,6 +497,8 @@ http.createServer((req, res) => {
   if (req.method === 'POST' && p === '/api/me/pass') return handleMyPass(req, res);
   if ((req.method === 'GET' || req.method === 'POST') && p === '/api/testpass')
     return handleTestPass(req, res);
+  if ((req.method === 'GET' || req.method === 'POST' || req.method === 'DELETE') && p === '/api/progress')
+    return handleProgress(req, res);
   if (req.method === 'POST' && p === '/api/settings') return handleSettings(req, res);
   if (req.method === 'GET') return serveStatic(req, res, u);
   res.writeHead(405); res.end();

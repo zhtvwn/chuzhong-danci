@@ -417,13 +417,61 @@
 <script src="words.js?v=3067"></script>
 <script>
 /* ================= 数据与存储 ================= */
-const STORE_KEY = 'vocab_progress_v1';
-let progress = loadProgress();
+const STORE_KEY = 'vocab_progress_v1';       // 旧版本地进度, 仅登录用户首次迁移时读取
+const SESSION_KEY = 'vocab_progress_anon';  // 匿名用户: 会话级进度, 关闭页面即清
+let progress = loadAnonProgress();          // 先按匿名加载; 登录后由服务端数据替换
+let progressRemote = false;                 // true=已登录, 进度存服务端(按用户隔离)
 
-function loadProgress() {
-  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (e) { return {}; }
+function loadAnonProgress() {
+  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)) || {}; } catch (e) { return {}; }
 }
-function saveProgress() { localStorage.setItem(STORE_KEY, JSON.stringify(progress)); }
+function saveLocalProgress() {
+  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(progress)); } catch (e) {}
+}
+/* 登录用户: 单条进度增量上报服务端 */
+function pushRemoteOne(p) {
+  fetch('/api/progress', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ set: [p] }),
+  }).catch(() => {});
+}
+/* 登录用户首次使用: 旧本地进度整体迁移到服务端(分批, 防超请求体上限) */
+async function seedRemote(obj) {
+  const items = Object.keys(obj).map(w => ({ w, k: obj[w].k, c: obj[w].c, t: obj[w].t }));
+  for (let i = 0; i < items.length; i += 150) {
+    try {
+      await fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ set: items.slice(i, i + 150) }),
+      });
+    } catch (e) {}
+  }
+}
+/* 登录后加载该用户在服务端的进度; 服务端无记录时把旧本地进度迁移上去 */
+async function initProgress() {
+  progressRemote = true;
+  try {
+    const r = await fetch('/api/progress');
+    if (r.status === 401) { progressRemote = false; return; }
+    const d = await r.json();
+    const remote = d.progress || {};
+    if (Object.keys(remote).length) {
+      progress = remote;
+    } else {
+      let old = {};
+      try { old = JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) {}
+      if (Object.keys(old).length) {
+        progress = old;
+        await seedRemote(old);
+        try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+      }
+    }
+  } catch (e) {}
+  updateHeader();
+  renderList();
+}
 function getStatus(w) {
   const p = progress[w];
   return p ? p.k : null;   // true=known, false=unknown, null=未学
@@ -575,7 +623,10 @@ function learnNext() {
 function markWord(w, known) {
   const p = progress[w] || { k: null, c: 0 };
   p.k = known; p.c = (p.c || 0) + 1; p.t = Date.now();
-  progress[w] = p; saveProgress(); updateHeader();
+  progress[w] = p;
+  if (progressRemote) pushRemoteOne({ w, k: p.k, c: p.c, t: p.t });
+  else saveLocalProgress();
+  updateHeader();
 }
 function quitLearn(alertMsg = true) {
   learnQueue = [];
@@ -929,10 +980,14 @@ document.getElementById('btnExport').addEventListener('click', () => {
   a.click();
   URL.revokeObjectURL(a.href);
 });
-document.getElementById('btnReset').addEventListener('click', () => {
-  if (confirm('确定清空所有学习记录吗？此操作不可恢复。')) {
-    progress = {}; saveProgress(); updateHeader(); renderList();
+document.getElementById('btnReset').addEventListener('click', async () => {
+  if (!confirm('确定清空学习记录吗？此操作不可恢复。\n（只清空当前账号的学习记录，不影响其他用户）')) return;
+  if (progressRemote) {
+    try { await fetch('/api/progress', { method: 'DELETE' }); } catch (e) {}
+  } else {
+    try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {}
   }
+  progress = {}; updateHeader(); renderList();
 });
 
 /* ================= 登录态检查 + 访问日志打点（每会话一次） ================= */
@@ -951,8 +1006,9 @@ document.getElementById('btnReset').addEventListener('click', () => {
     `<a class="chip" href="${escAttr(l.url)}"${/^https?:/i.test(l.url) ? ' target="_blank" rel="noopener"' : ''} style="text-decoration:none">${esc(l.text)}</a>`
   ).join('');
   if (who.logged) {
-    currentUser = who.user;          // 登录用户: 启用自测计数功能
+    currentUser = who.user;          // 登录用户: 启用自测计数 + 服务端进度(按用户隔离)
     loadTestPass();
+    initProgress();
     document.getElementById('authBox').style.display = 'flex';
     const c = document.getElementById('userChip');
     c.style.display = 'inline-block';
