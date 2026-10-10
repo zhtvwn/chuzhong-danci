@@ -50,6 +50,30 @@ if (!Array.isArray(users) || !users.length) {
 }
 let settings = loadJson(SETTINGS_FILE, { anonymous: true });   // anonymous=false 时学习页需登录
 let sessions = loadJson(SESSIONS_FILE, {});
+
+/* 词库索引(用于管理员查看"每个用户学习进度及记录"):
+ *   WORDS_TOTAL  = 词条总数(未学 = 总数 - 已掌握 - 未掌握)
+ *   WORDS_BY_W   = 原词 -> 词条(含释义), 反查"标记/自测记录"原词对应的释义
+ *   WORDS_BY_NORM= 归一化键 -> 原词, 反查"自测通过"记录对应的原词
+ * 启动时一次性读取; 改词库后需 docker compose up -d --build */
+let WORDS_TOTAL = 0;
+let WORDS_BY_W = {};
+let WORDS_BY_NORM = {};
+try {
+  const src = fs.readFileSync(path.join(__dirname, 'words.js'), 'utf8');
+  const m = src.match(/const\s+WORDS\s*=\s*(\[.*?\])\s*;/s);
+  if (m) {
+    const ws = JSON.parse(m[1]);
+    WORDS_TOTAL = ws.length;
+    for (const x of ws) {
+      if (x && x.w) {
+        WORDS_BY_W[x.w] = x;
+        const k = String(x.w).toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]/g, '');
+        if (k) WORDS_BY_NORM[k] = x.w;
+      }
+    }
+  }
+} catch (e) {}
 {   // 启动时清理过期会话
   const now = Date.now();
   let dirty = false;
@@ -462,6 +486,87 @@ function handleLogs(req, res, u) {
   res.end(JSON.stringify(out));
 }
 
+/* --- 管理员: 查看所有用户学习进度汇总 --- */
+function handleAdminProgress(req, res) {
+  const admin = requireAdmin(req, res);
+  if (!admin) return json(res, 401, { error: '需要管理员权限' });
+  /* 顺便算最近一次访问时间(打开页面即算, 不一定要标记过词) */
+  const lastVisit = {};
+  for (const v of visits) {
+    if (!v.user) continue;
+    if (!lastVisit[v.user] || v.ts > lastVisit[v.user]) lastVisit[v.user] = v.ts;
+  }
+  const out = users.map(u => {
+    const st = loadProgressStore(progressFile(u.user));
+    let known = 0, unknown = 0, lastMarkTs = 0;
+    for (const w in st.words) {
+      const e = st.words[w];
+      if (e.k === true) known++;
+      else if (e.k === false) unknown++;
+      if (e.t && e.t > lastMarkTs) lastMarkTs = e.t;
+    }
+    const pass = loadJson(testPassFile(u.user), {});
+    const passCount = Object.keys(pass).length;
+    const lastVisitTs = lastVisit[u.user] || 0;
+    return {
+      user: u.user,
+      role: u.role,
+      created: u.created,
+      known, unknown,
+      new: Math.max(0, WORDS_TOTAL - known - unknown),
+      lastMarkTs,
+      lastVisitTs,
+      lastTs: Math.max(lastMarkTs, lastVisitTs),
+      passCount,
+    };
+  });
+  return json(res, 200, { total: WORDS_TOTAL, users: out });
+}
+
+/* --- 管理员: 查看单个用户的详细进度(标记记录 + 自测通过) --- */
+function handleAdminUserProgress(req, res, u) {
+  const admin = requireAdmin(req, res);
+  if (!admin) return json(res, 401, { error: '需要管理员权限' });
+  const name = String(u.searchParams.get('user') || '').trim();
+  if (!name) return json(res, 400, { error: '缺 user 参数' });
+  if (!users.find(x => x.user === name)) return json(res, 404, { error: '用户不存在' });
+  const st = loadProgressStore(progressFile(name));
+  const pass = loadJson(testPassFile(name), {});
+  /* 标记记录: 词 + 状态 + 标记次数 + 时间 + 释义 */
+  const marks = Object.keys(st.words).map(w => {
+    const e = st.words[w];
+    const o = WORDS_BY_W[w];
+    return { w, k: e.k === true, c: e.c || 0, t: e.t || 0, m: o ? (o.m || '') : '' };
+  });
+  marks.sort((a, b) => (b.t || 0) - (a.t || 0));
+  /* 自测通过: 归一化键反查原词 */
+  const passes = Object.keys(pass).map(k => {
+    const orig = WORDS_BY_NORM[k] || k;
+    const o = WORDS_BY_W[orig];
+    return { w: orig, n: pass[k], m: o ? (o.m || '') : '' };
+  });
+  passes.sort((a, b) => b.n - a.n);
+  return json(res, 200, {
+    user: name,
+    pos: st.pos,
+    marks,
+    passes,
+    total: WORDS_TOTAL,
+  });
+}
+
+/* --- 管理员: 清空指定用户的学习进度(慎用, 不可恢复) --- */
+function handleAdminResetProgress(req, res, u) {
+  const admin = requireAdmin(req, res);
+  if (!admin) return json(res, 401, { error: '需要管理员权限' });
+  const name = String(u.searchParams.get('user') || '').trim();
+  if (!name) return json(res, 400, { error: '缺 user 参数' });
+  if (!users.find(x => x.user === name)) return json(res, 404, { error: '用户不存在' });
+  if (name === admin.user) return json(res, 400, { error: '不能清空自己的进度' });
+  saveJson(progressFile(name), { v: 2, words: {}, pos: null });
+  return json(res, 200, { ok: true });
+}
+
 /* ---------- 静态文件（白名单） ---------- */
 const FILES = {
   '/': { f: 'index.html', type: 'text/html; charset=utf-8' },
@@ -516,6 +621,9 @@ http.createServer((req, res) => {
   if ((req.method === 'GET' || req.method === 'POST' || req.method === 'DELETE') && p === '/api/progress')
     return handleProgress(req, res);
   if (req.method === 'POST' && p === '/api/settings') return handleSettings(req, res);
+  if (req.method === 'GET' && p === '/api/admin/progress') return handleAdminProgress(req, res);
+  if (req.method === 'GET' && p === '/api/admin/user-progress') return handleAdminUserProgress(req, res, u);
+  if (req.method === 'DELETE' && p === '/api/admin/progress') return handleAdminResetProgress(req, res, u);
   if (req.method === 'GET') return serveStatic(req, res, u);
   res.writeHead(405); res.end();
 }).listen(PORT, () => {

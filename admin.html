@@ -75,6 +75,40 @@
   .msg.err { color: var(--red); }
   .tip { font-size: 12px; color: var(--muted); margin-top: 10px; line-height: 1.6; }
   #gate { display: none; text-align: center; padding: 80px 20px; color: var(--muted); font-size: 14px; }
+  /* 学习进度查看 */
+  .progress-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .progress-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 640px; }
+  .progress-table th { text-align: left; color: var(--muted); font-weight: 500; padding: 8px 6px; font-size: 11px; white-space: nowrap; border-bottom: 1.5px solid #E5E5EA; }
+  .progress-table td { padding: 9px 6px; border-top: 1px solid #E5E5EA; vertical-align: middle; }
+  .progress-table tr.main { cursor: pointer; transition: background .1s; }
+  .progress-table tr.main:hover { background: #F9F9FB; }
+  .progress-table tr.detail-row { display: none; }
+  .progress-table tr.detail-row.open { display: table-row; }
+  .progress-table .detail-cell { background: #F9F9FB; padding: 14px; }
+  .progress-table .num { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .progress-table .num.known { color: var(--green); }
+  .progress-table .num.unknown { color: var(--red); }
+  .progress-table .num.muted { color: #94a3b8; }
+  .progress-table .num.pass { color: #0062CC; }
+  .tag.k-true { background: rgba(52,199,89,.14); color: #248A3D; }
+  .tag.k-false { background: rgba(255,59,48,.12); color: #C93400; }
+  .subhead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .subhead h2.sect { margin-bottom: 0; }
+  .subhead .right { margin-left: auto; font-size: 12px; color: var(--muted); }
+  .mark-list, .pass-list { max-height: 360px; overflow-y: auto; border: 1px solid #E5E5EA; border-radius: 10px; padding: 4px 10px; background: #fff; }
+  .mark-item, .pass-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid #F2F2F7; font-size: 13px; }
+  .mark-item:last-child, .pass-item:last-child { border-bottom: none; }
+  .mark-item .w, .pass-item .w { font-weight: 600; min-width: 80px; }
+  .mark-item .m, .pass-item .m { color: var(--muted); font-size: 12px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mark-item .t, .pass-item .t { color: #94a3b8; font-size: 11px; min-width: 100px; text-align: right; white-space: nowrap; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .detail-grid .col-title { font-size: 12px; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+  .detail-foot { font-size: 11px; color: #94a3b8; margin-top: 10px; padding-top: 8px; border-top: 1px dashed #E5E5EA; }
+  @media (max-width: 640px) {
+    .detail-grid { grid-template-columns: 1fr; }
+    .progress-table { font-size: 11px; }
+    .subhead .right { margin-left: 0; flex-basis: 100%; }
+  }
 </style>
 </head>
 <body>
@@ -119,6 +153,34 @@
       <thead><tr><th>用户名</th><th>权限</th><th>创建时间</th><th style="text-align:right">操作</th></tr></thead>
       <tbody id="tb"></tbody>
     </table>
+  </div>
+
+  <!-- 学习进度查看 -->
+  <div class="card">
+    <div class="subhead">
+      <h2 class="sect">📊 学习进度查看</h2>
+      <button class="btn ghost" onclick="loadProgress()">↻ 刷新</button>
+      <div class="right" id="progLastUpdate"></div>
+    </div>
+    <div class="tip" style="margin:8px 0 10px">每个用户已掌握 / 未掌握 / 未学过的词数、最近活动及自测通过词数。点击行展开详细记录。「清空」会删除该用户所有学习进度和断点（不可恢复）。</div>
+    <div class="progress-wrap">
+      <table class="progress-table">
+        <thead>
+          <tr>
+            <th>用户</th>
+            <th>权限</th>
+            <th>已掌握</th>
+            <th>未掌握</th>
+            <th>未学</th>
+            <th>自测</th>
+            <th>最近活动</th>
+            <th style="text-align:right">操作</th>
+          </tr>
+        </thead>
+        <tbody id="progTb"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="progEmpty" style="display:none">暂无用户</div>
   </div>
 
   <!-- 添加用户 -->
@@ -301,6 +363,134 @@ async function changeMyPass() {
   } else showMsg('passMsg', r.data.error || '修改失败', true);
 }
 
+/* ================= 学习进度查看 ================= */
+let progTotal = 0;
+
+async function loadProgress() {
+  const r = await fetch('/api/admin/progress');
+  if (r.status === 401) return;
+  const d = await r.json();
+  progTotal = d.total || 0;
+  document.getElementById('progLastUpdate').textContent = '更新于 ' + new Date().toLocaleTimeString() + ' · 总词数 ' + progTotal;
+  const tb = document.getElementById('progTb');
+  document.getElementById('progEmpty').style.display = d.users.length ? 'none' : 'block';
+  tb.innerHTML = d.users.map(u => {
+    const pct = progTotal > 0 ? Math.min(100, Math.round(u.known / progTotal * 100)) : 0;
+    const lastTime = u.lastTs
+      ? timeAgo(u.lastTs) + ' · ' + fmtTime(u.lastTs)
+      : '从未活动';
+    return `
+      <tr class="main" data-user="${esc(u.user)}" onclick="toggleDetail(this)">
+        <td><b>${esc(u.user)}</b>${u.user === me ? ' <span style="color:#94a3b8">(我)</span>' : ''}</td>
+        <td><span class="tag ${u.role}">${u.role === 'admin' ? '管理员' : '普通'}</span></td>
+        <td><span class="num known">${u.known}</span> <span style="color:#94a3b8;font-size:11px">(${pct}%)</span></td>
+        <td><span class="num unknown">${u.unknown}</span></td>
+        <td><span class="num muted">${u.new}</span></td>
+        <td><span class="num pass">${u.passCount}</span></td>
+        <td style="color:#64748b;font-size:11px">${esc(lastTime)}</td>
+        <td><div class="ops">
+          <button class="btn ghost" data-act="toggle">查看</button>
+          ${u.user === me ? '' : `<button class="btn ghost danger" data-act="reset">清空</button>`}
+        </div></td>
+      </tr>
+      <tr class="detail-row" data-detail-for="${esc(u.user)}">
+        <td colspan="8" class="detail-cell"><div class="empty">点击「查看」加载详细记录…</div></td>
+      </tr>`;
+  }).join('');
+}
+
+async function toggleDetail(row) {
+  const user = row.getAttribute('data-user');
+  if (!user) return;
+  const detail = document.querySelector('tr.detail-row[data-detail-for="' + user + '"]');
+  const btn = row.querySelector('button[data-act="toggle"]');
+  if (!detail) return;
+  if (detail.classList.contains('open')) {
+    detail.classList.remove('open');
+    if (btn) btn.textContent = '查看';
+    return;
+  }
+  /* 关闭其他展开的行, 保持界面简洁 */
+  document.querySelectorAll('tr.detail-row.open').forEach(r => r.classList.remove('open'));
+  document.querySelectorAll('button[data-act="toggle"]').forEach(b => b.textContent = '查看');
+  detail.classList.add('open');
+  if (btn) btn.textContent = '收起';
+  detail.querySelector('td.detail-cell').innerHTML = '<div class="empty">加载中…</div>';
+  const r = await fetch('/api/admin/user-progress?user=' + encodeURIComponent(user));
+  if (r.status === 401) return;
+  const d = await r.json();
+  renderDetail(detail, d);
+}
+
+function renderDetail(row, d) {
+  const marks = d.marks || [];
+  const passes = d.passes || [];
+  const markHtml = marks.length
+    ? '<div class="mark-list">' + marks.slice(0, 50).map(m => {
+        const kBadge = m.k
+          ? '<span class="tag k-true">✓ 掌握</span>'
+          : '<span class="tag k-false">✗ 未掌握</span>';
+        const cBadge = m.c > 1 ? ' <span style="color:#94a3b8;font-size:11px">×' + m.c + '</span>' : '';
+        const tt = m.t ? ' title="' + esc(fmtTime(m.t)) + '"' : '';
+        return `<div class="mark-item"${tt}>${kBadge}<span class="w">${esc(m.w)}</span><span class="m">${esc(m.m || '–')}</span><span class="t">${m.t ? esc(timeAgo(m.t)) : '–'}</span>${cBadge}</div>`;
+      }).join('') + (marks.length > 50 ? '<div class="empty" style="padding:8px">仅显示最近 50 条, 共 ' + marks.length + ' 条</div>' : '') + '</div>'
+    : '<div class="empty">尚无标记记录</div>';
+  const passHtml = passes.length
+    ? '<div class="pass-list">' + passes.slice(0, 50).map(p =>
+        `<div class="pass-item"><span class="w">${esc(p.w)}</span><span class="m">${esc(p.m || '–')}</span><span class="t">通过 <b style="color:#248A3D">${p.n}</b> 次</span></div>`
+      ).join('') + (passes.length > 50 ? '<div class="empty" style="padding:8px">仅显示前 50 个, 共 ' + passes.length + ' 个</div>' : '') + '</div>'
+    : '<div class="empty">尚无自测通过记录</div>';
+  const posHtml = d.pos && d.pos.w
+    ? '上次停在 <b>' + esc(d.pos.w) + '</b>(' + (d.pos.done ? '已标记' : '仅翻卡/跳过') + ')'
+    : '无';
+  row.querySelector('td.detail-cell').innerHTML = `
+    <div class="detail-grid">
+      <div>
+        <div class="col-title">标记记录 (按时间倒序, 共 ${marks.length} 条)</div>
+        ${markHtml}
+      </div>
+      <div>
+        <div class="col-title">自测通过 (按次数倒序, 共 ${passes.length} 个)</div>
+        ${passHtml}
+      </div>
+    </div>
+    <div class="detail-foot">断点: ${posHtml}</div>`;
+}
+
+/* 单独点操作按钮不触发行展开(用 data-act 区分) */
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const tr = btn.closest('tr.main');
+  if (!tr) return;
+  const user = tr.getAttribute('data-user');
+  if (btn.getAttribute('data-act') === 'reset') {
+    resetUser(user);
+  } else if (btn.getAttribute('data-act') === 'toggle') {
+    toggleDetail(tr);
+  }
+});
+
+async function resetUser(name) {
+  if (!confirm('确定清空用户「' + name + '」的所有学习进度和断点?\n此操作不可恢复!')) return;
+  const r = await fetch('/api/admin/progress?user=' + encodeURIComponent(name), { method: 'DELETE' });
+  const d = await r.json().catch(() => ({}));
+  if (r.ok) {
+    showMsg('addMsg', '已清空 ' + name + ' 的进度');
+    loadProgress();
+  } else showMsg('addMsg', d.error || '清空失败', true);
+}
+
+function timeAgo(ts) {
+  if (!ts) return '–';
+  const diff = Date.now() - ts;
+  if (diff < 60000) return '刚刚';
+  if (diff < 3600000) return Math.floor(diff / 60000) + ' 分钟前';
+  if (diff < 86400000) return Math.floor(diff / 3600000) + ' 小时前';
+  if (diff < 30 * 86400000) return Math.floor(diff / 86400000) + ' 天前';
+  return fmtTime(ts);
+}
+
 function gate() {
   document.getElementById('main').style.display = 'none';
   const g = document.getElementById('gate');
@@ -317,6 +507,7 @@ function gate() {
     await loadAnon();
     await loadLinks();
     await loadUsers();
+    await loadProgress();
   } catch (e) {
     gate();
   }
