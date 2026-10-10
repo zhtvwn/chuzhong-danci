@@ -418,7 +418,6 @@
 <script src="words.js?v=3067"></script>
 <script>
 /* ================= 数据与存储 ================= */
-const STORE_KEY = 'vocab_progress_v1';       // 旧版本地进度, 仅登录用户首次迁移时读取
 const SESSION_KEY = 'vocab_progress_anon';  // 匿名用户: 会话级进度, 关闭页面即清
 const SESSION_POS_KEY = 'vocab_learn_pos';  // 匿名用户: 会话级背单词断点
 let progress = loadAnonProgress();          // 先按匿名加载; 登录后由服务端数据替换
@@ -457,39 +456,15 @@ function saveLearnPos() {
     } catch (e) {}
   }
 }
-/* 登录用户首次使用: 旧本地进度整体迁移到服务端(分批, 防超请求体上限) */
-async function seedRemote(obj) {
-  const items = Object.keys(obj).map(w => ({ w, k: obj[w].k, c: obj[w].c, t: obj[w].t }));
-  for (let i = 0; i < items.length; i += 150) {
-    try {
-      await fetch('/api/progress', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ set: items.slice(i, i + 150) }),
-      });
-    } catch (e) {}
-  }
-}
-/* 登录后加载该用户在服务端的进度; 服务端无记录时把旧本地进度迁移上去 */
+/* 登录后加载该用户在服务端的进度 */
 async function initProgress() {
   progressRemote = true;
   try {
     const r = await fetch('/api/progress');
     if (r.status === 401) { progressRemote = false; return; }
     const d = await r.json();
-    const remote = d.progress || {};
+    progress = d.progress || {};
     learnPos = d.pos || null;
-    if (Object.keys(remote).length) {
-      progress = remote;
-    } else {
-      let old = {};
-      try { old = JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) {}
-      if (Object.keys(old).length) {
-        progress = old;
-        await seedRemote(old);
-        try { localStorage.removeItem(STORE_KEY); } catch (e) {}
-      }
-    }
   } catch (e) {}
   updateHeader();
   renderList();
