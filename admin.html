@@ -108,6 +108,19 @@
     .detail-grid { grid-template-columns: 1fr; }
     .progress-table { font-size: 11px; }
     .subhead .right { margin-left: 0; flex-basis: 100%; }
+    /* 手机端隐藏次要列: 权限 / 未学 / 完整时间 / 百分比, 核心四列保留 */
+    .progress-table th.hide-mob, .progress-table td.hide-mob { display: none; }
+  }
+  /* 桌面端: 像 logs.html 一样扩展容器宽度, 让 8 列表格不再挤 */
+  @media (min-width: 1024px) {
+    .wrap { max-width: 1100px; padding-bottom: 40px; }
+    /* 详情两列在宽屏上各自更宽, 释义不再被截断 */
+    .detail-grid { grid-template-columns: 1.4fr 1fr; }
+    .progress-table { font-size: 13px; }
+  }
+  /* 中等屏幕(平板横放/小桌面): 折中宽度, 详情两列等宽 */
+  @media (min-width: 640px) and (max-width: 1023px) {
+    .wrap { max-width: 880px; }
   }
 </style>
 </head>
@@ -168,10 +181,10 @@
         <thead>
           <tr>
             <th>用户</th>
-            <th>权限</th>
+            <th class="hide-mob">权限</th>
             <th>已掌握</th>
             <th>未掌握</th>
-            <th>未学</th>
+            <th class="hide-mob">未学</th>
             <th>自测</th>
             <th>最近活动</th>
             <th style="text-align:right">操作</th>
@@ -376,18 +389,21 @@ async function loadProgress() {
   document.getElementById('progEmpty').style.display = d.users.length ? 'none' : 'block';
   tb.innerHTML = d.users.map(u => {
     const pct = progTotal > 0 ? Math.min(100, Math.round(u.known / progTotal * 100)) : 0;
-    const lastTime = u.lastTs
-      ? timeAgo(u.lastTs) + ' · ' + fmtTime(u.lastTs)
+    /* 桌面端显示「相对时间 · 完整时间」, 手机端只显示相对时间(详细时间放 title tooltip) */
+    const lastRel = u.lastTs ? timeAgo(u.lastTs) : '从未活动';
+    const lastFull = u.lastTs ? fmtTime(u.lastTs) : '';
+    const lastTimeHtml = u.lastTs
+      ? `<span title="${esc(lastFull)}">${esc(lastRel)}</span>`
       : '从未活动';
     return `
       <tr class="main" data-user="${esc(u.user)}">
         <td><b>${esc(u.user)}</b>${u.user === me ? ' <span style="color:#94a3b8">(我)</span>' : ''}</td>
-        <td><span class="tag ${u.role}">${u.role === 'admin' ? '管理员' : '普通'}</span></td>
-        <td><span class="num known">${u.known}</span> <span style="color:#94a3b8;font-size:11px">(${pct}%)</span></td>
+        <td class="hide-mob"><span class="tag ${u.role}">${u.role === 'admin' ? '管理员' : '普通'}</span></td>
+        <td><span class="num known">${u.known}</span> <span class="hide-mob" style="color:#94a3b8;font-size:11px">(${pct}%)</span></td>
         <td><span class="num unknown">${u.unknown}</span></td>
-        <td><span class="num muted">${u.new}</span></td>
+        <td class="hide-mob"><span class="num muted">${u.new}</span></td>
         <td><span class="num pass">${u.passCount}</span></td>
-        <td style="color:#64748b;font-size:11px">${esc(lastTime)}</td>
+        <td style="color:#64748b;font-size:11px">${lastTimeHtml}</td>
         <td><div class="ops">
           <button class="btn ghost" data-act="toggle">查看</button>
           ${u.user === me ? '' : `<button class="btn ghost danger" data-act="reset">清空</button>`}
