@@ -380,7 +380,7 @@ async function loadProgress() {
       ? timeAgo(u.lastTs) + ' · ' + fmtTime(u.lastTs)
       : '从未活动';
     return `
-      <tr class="main" data-user="${esc(u.user)}" onclick="toggleDetail(this)">
+      <tr class="main" data-user="${esc(u.user)}">
         <td><b>${esc(u.user)}</b>${u.user === me ? ' <span style="color:#94a3b8">(我)</span>' : ''}</td>
         <td><span class="tag ${u.role}">${u.role === 'admin' ? '管理员' : '普通'}</span></td>
         <td><span class="num known">${u.known}</span> <span style="color:#94a3b8;font-size:11px">(${pct}%)</span></td>
@@ -457,16 +457,17 @@ function renderDetail(row, d) {
     <div class="detail-foot">断点: ${posHtml}</div>`;
 }
 
-/* 单独点操作按钮不触发行展开(用 data-act 区分) */
+/* 行的所有点击统一由文档委托处理: 按钮执行专门动作, 行体空白处触发展开
+ * 避免行内 onclick + 文档 addEventListener 同时触发造成"开+关"抵消 */
 document.addEventListener('click', (e) => {
-  const btn = e.target.closest('button[data-act]');
-  if (!btn) return;
-  const tr = btn.closest('tr.main');
+  const tr = e.target.closest('tr.main');
   if (!tr) return;
   const user = tr.getAttribute('data-user');
-  if (btn.getAttribute('data-act') === 'reset') {
-    resetUser(user);
-  } else if (btn.getAttribute('data-act') === 'toggle') {
+  const btn = e.target.closest('button[data-act]');
+  if (btn) {
+    if (btn.getAttribute('data-act') === 'reset') resetUser(user);
+    else if (btn.getAttribute('data-act') === 'toggle') toggleDetail(tr);
+  } else {
     toggleDetail(tr);
   }
 });
