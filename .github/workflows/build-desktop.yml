@@ -3,13 +3,20 @@ name: build-desktop
 # 桌面客户端构建: Windows NSIS 安装包 + macOS dmg (Intel x64, 兼容 10.15 Catalina)
 # Electron 固定 32.x —— 33+ 已移除 macOS 10.15 支持, 不要随意升级
 on:
-  workflow_dispatch: {}          # 手动触发
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release 标签, 例如 v1.2.0。留空 = 只构建不发布'
+        required: false
+        default: ''
   push:
     branches: [main]
+    tags: ['v*']
     paths:
       - 'desktop/**'
       - '.github/workflows/build-desktop.yml'
 
+# 默认只读; 发布 Release 的 job 单独申请写权限
 permissions:
   contents: read
 
@@ -71,3 +78,34 @@ jobs:
           path: desktop/dist/*.dmg
           if-no-files-found: error
           retention-days: 30
+
+  release:
+    name: 发布到 GitHub Release
+    needs: [build-win, build-mac]
+    # 仅在这两种情况发布: 手动触发时填了 tag / push 了 v* 标签
+    if: (github.event_name == 'workflow_dispatch' && inputs.tag != '') || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write          # 创建 Release 与上传附件需要
+    steps:
+      - name: 下载两个平台的产物
+        uses: actions/download-artifact@v5
+        with:
+          path: artifacts
+
+      - name: 创建或更新 Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          set -e
+          echo "TAG=$TAG"
+          ls -R artifacts
+          files=$(find artifacts -type f)
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG 已存在, 覆盖上传附件"
+            gh release upload "$TAG" $files --clobber
+          else
+            echo "创建新 Release $TAG"
+            gh release create "$TAG" --title "初中考纲词汇 $TAG" --generate-notes $files
+          fi

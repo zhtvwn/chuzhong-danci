@@ -39,6 +39,7 @@
         }
       ],
       "defaultArch": "x64",
+      "artifactName": "ChuZhongDanci-${version}-mac-intel.${ext}",
       "identity": null,
       "gatekeeperAssess": false,
       "hardenedRuntime": false,
@@ -59,6 +60,7 @@
           "arch": ["x64"]
         }
       ],
+      "artifactName": "ChuZhongDanci-Setup-${version}-win-${arch}.${ext}",
       "icon": "build/icon.ico"
     },
     "nsis": {
