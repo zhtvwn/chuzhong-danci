@@ -26,7 +26,6 @@
     },
     "files": [
       "main.js",
-      "main.js.map",
       "preload.js",
       "config.html",
       "package.json"
@@ -39,7 +38,7 @@
           "arch": ["x64"]
         }
       ],
-      "arch": ["x64"],
+      "defaultArch": "x64",
       "identity": null,
       "gatekeeperAssess": false,
       "hardenedRuntime": false,
