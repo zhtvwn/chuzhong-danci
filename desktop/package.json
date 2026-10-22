@@ -1,0 +1,75 @@
+{
+  "name": "chuzhong-danci-client",
+  "version": "1.2.0",
+  "description": "初中考纲词汇 · 桌面客户端（连接 NAS 上的服务端）",
+  "main": "main.js",
+  "author": "wangning",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win --x64",
+    "build:mac": "electron-builder --mac --x64",
+    "build:all": "electron-builder --win --mac --x64"
+  },
+  "devDependencies": {
+    "electron": "32.2.7",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "com.zhtvwn.chuzhongdanci.client",
+    "productName": "初中考纲词汇",
+    "copyright": "Copyright © 2026",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "main.js.map",
+      "preload.js",
+      "config.html",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.education",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64"]
+        }
+      ],
+      "arch": ["x64"],
+      "identity": null,
+      "gatekeeperAssess": false,
+      "hardenedRuntime": false,
+      "minimumSystemVersion": "10.15.0",
+      "icon": "build/icon.png"
+    },
+    "dmg": {
+      "contents": [
+        { "x": 130, "y": 220 },
+        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+      ],
+      "window": { "width": 540, "height": 380 }
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "初中考纲词汇",
+      "installerLanguages": ["zh_CN"],
+      "language": "2052"
+    }
+  }
+}

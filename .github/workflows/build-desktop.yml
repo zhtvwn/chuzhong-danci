@@ -1,0 +1,73 @@
+name: build-desktop
+
+# 桌面客户端构建: Windows NSIS 安装包 + macOS dmg (Intel x64, 兼容 10.15 Catalina)
+# Electron 固定 32.x —— 33+ 已移除 macOS 10.15 支持, 不要随意升级
+on:
+  workflow_dispatch: {}          # 手动触发
+  push:
+    branches: [main]
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/build-desktop.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-win:
+    name: Windows 安装包 (x64 NSIS)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 安装依赖
+        working-directory: desktop
+        run: npm install --no-audit --no-fund
+
+      - name: 构建 Windows 安装包
+        working-directory: desktop
+        run: npx electron-builder --win --x64 --publish never
+
+      - name: 上传产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: desktop/dist/*.exe
+          if-no-files-found: error
+          retention-days: 30
+
+  build-mac:
+    name: macOS 安装包 (Intel x64 dmg, 最低 10.15)
+    # runner 是 Apple Silicon, 但通过 arch: x64 交叉打包 Intel 版:
+    # electron-builder 按 arch 下载对应的 darwin-x64 Electron 二进制, dmg 打包与 CPU 无关
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 安装依赖
+        working-directory: desktop
+        run: npm install --no-audit --no-fund
+
+      - name: 构建 macOS dmg
+        working-directory: desktop
+        env:
+          # 未签名: 跳过 codesign / notarize, 首次打开需右键 -> 打开
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          MACOSX_DEPLOYMENT_TARGET: '10.15'
+        run: npx electron-builder --mac --x64 --publish never
+
+      - name: 上传产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-installer
+          path: desktop/dist/*.dmg
+          if-no-files-found: error
+          retention-days: 30

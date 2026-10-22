@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>连接服务器 · 初中考纲词汇</title>
+<style>
+  :root {
+    --primary: #007AFF; --bg: #F2F2F7; --card: #fff; --text: #1C1C1E;
+    --muted: #8E8E93; --green: #34C759; --red: #FF3B30;
+    --radius: 12px; --shadow: 0 1px 10px rgba(0,0,0,.07);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC",
+                 "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text);
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 24px; user-select: none;
+  }
+  .box { width: 100%; max-width: 460px; }
+  .icon { font-size: 56px; text-align: center; margin-bottom: 8px; }
+  h1 { font-size: 22px; font-weight: 800; text-align: center; letter-spacing: -.4px; }
+  .sub { font-size: 13px; color: var(--muted); text-align: center; margin-top: 6px; }
+  .card {
+    background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 20px; margin-top: 22px;
+  }
+  label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 6px; }
+  input {
+    width: 100%; border: 1px solid #D1D1D6; border-radius: 10px;
+    padding: 11px 13px; font-size: 14px; outline: none; font-family: inherit;
+    background: #F2F2F7;
+  }
+  input:focus { border-color: var(--primary); background: #fff; }
+  button {
+    width: 100%; margin-top: 14px; border: none; border-radius: 12px;
+    padding: 13px 18px; font-size: 15px; font-weight: 600; font-family: inherit;
+    background: var(--primary); color: #fff; cursor: pointer;
+  }
+  button:active { opacity: .5; }
+  .msg { text-align: center; font-size: 13px; min-height: 18px; margin-top: 10px; }
+  .msg.err { color: var(--red); }
+  .msg.ok { color: var(--green); }
+  .tip { font-size: 12px; color: var(--muted); line-height: 1.7; margin-top: 16px; }
+  .tip b { color: var(--text); }
+  .banner {
+    display: none; background: rgba(255,59,48,.10); color: #C93400;
+    border-radius: 10px; padding: 10px 12px; font-size: 12px;
+    line-height: 1.6; margin-bottom: 14px; word-break: break-all;
+  }
+  .banner.show { display: block; }
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="icon">📖</div>
+  <h1>初中考纲词汇</h1>
+  <div class="sub">首次使用，请先连接到 NAS 上的服务</div>
+
+  <div class="card">
+    <div class="banner" id="banner"></div>
+    <label for="url">服务器地址</label>
+    <input id="url" placeholder="http://192.168.1.100:8800" autocomplete="off" spellcheck="false">
+    <button id="save">连接并开始学习</button>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <div class="tip">
+    <b>地址怎么填？</b><br>
+    填你飞牛 NAS 的 IP 加端口 <b>8800</b>，例如 <b>http://192.168.1.100:8800</b>。<br>
+    NAS 的 IP 可以在路由器管理页或 fnOS「系统设置 → 网络」里查看。<br><br>
+    <b>注意：</b>电脑和 NAS 需在同一个网络下（家里 WiFi 或有线）。<br>
+    填一次即可，之后打开会直接进入学习页。想换地址随时用菜单「文件 → 修改服务器地址」。
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+/* 显示上一次的连接错误(由 main.js 通过 ?error= 传入) */
+const params = new URLSearchParams(location.search);
+const err = params.get('error');
+if (err) {
+  $('banner').textContent = '上次连接失败：' + err;
+  $('banner').classList.add('show');
+}
+
+/* 回填已保存的地址 */
+if (window.api && window.api.getConfig) {
+  window.api.getConfig().then(c => {
+    if (c && c.serverUrl) $('url').value = c.serverUrl;
+  }).catch(() => {});
+}
+
+async function save() {
+  const url = $('url').value.trim();
+  if (!url) return showMsg('请填写服务器地址', true);
+  if (!window.api) return showMsg('配置功能不可用', true);
+  const r = await window.api.saveConfig(url);
+  if (!r.ok) return showMsg(r.error || '保存失败', true);
+  showMsg('连接中…', false);
+  await window.api.openApp();
+}
+
+function showMsg(text, isErr) {
+  const el = $('msg');
+  el.textContent = text;
+  el.className = 'msg' + (isErr ? ' err' : ' ok');
+}
+
+$('save').addEventListener('click', save);
+$('url').addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
+</script>
+</body>
+</html>
