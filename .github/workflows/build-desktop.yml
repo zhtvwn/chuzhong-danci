@@ -18,9 +18,9 @@ jobs:
     name: Windows 安装包 (x64 NSIS)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
 
@@ -33,7 +33,7 @@ jobs:
         run: npx electron-builder --win --x64 --publish never
 
       - name: 上传产物
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: windows-installer
           path: desktop/dist/*.exe
@@ -46,9 +46,9 @@ jobs:
     # electron-builder 按 arch 下载对应的 darwin-x64 Electron 二进制, dmg 打包与 CPU 无关
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
 
@@ -65,7 +65,7 @@ jobs:
         run: npx electron-builder --mac --x64 --publish never
 
       - name: 上传产物
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: mac-installer
           path: desktop/dist/*.dmg
