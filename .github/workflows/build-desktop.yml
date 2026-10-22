@@ -88,6 +88,10 @@ jobs:
     permissions:
       contents: write          # 创建 Release 与上传附件需要
     steps:
+      # gh 命令必须在 git 仓库内运行才能推断目标仓库, 否则报 "not a git repository"
+      - name: 检出代码
+        uses: actions/checkout@v5
+
       - name: 下载两个平台的产物
         uses: actions/download-artifact@v5
         with:
@@ -96,6 +100,7 @@ jobs:
       - name: 创建或更新 Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
           TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
           set -e
